@@ -1,8 +1,10 @@
 package com.blockpuzzle.viewmodel
 
+import android.app.Application
 import androidx.compose.ui.geometry.Offset
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.blockpuzzle.data.HighScoreRepository
 import com.blockpuzzle.logic.GameEngine
 import com.blockpuzzle.model.GameState
 import com.blockpuzzle.model.GameState.Companion.GRID_SIZE
@@ -14,6 +16,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -46,10 +49,14 @@ data class DragState(
     val ghostCol: Int = -1,
     val ghostValid: Boolean = false,
     /** Cells in rows/columns that would be cleared if the shape is dropped here. */
-    val highlightCells: Set<Pair<Int, Int>> = emptySet()
+    val highlightCells: Set<Pair<Int, Int>> = emptySet(),
+    /** True while the drop shrink/fade animation is playing. */
+    val isDropAnimating: Boolean = false
 )
 
-class GameViewModel : ViewModel() {
+class GameViewModel(app: Application) : AndroidViewModel(app) {
+
+    private val highScoreRepo = HighScoreRepository(app)
 
     private val _gameState = MutableStateFlow(GameState())
     val gameState: StateFlow<GameState> = _gameState.asStateFlow()
@@ -79,6 +86,11 @@ class GameViewModel : ViewModel() {
     var cellSizePx: Float = 0f
 
     init {
+        // Load persisted high score, then start the game
+        viewModelScope.launch {
+            val savedHighScore = highScoreRepo.highScoreFlow.first()
+            _gameState.update { it.copy(highScore = savedHighScore) }
+        }
         startNewGame()
     }
 
@@ -162,7 +174,7 @@ class GameViewModel : ViewModel() {
     /** Called when the player lifts their finger. */
     fun onDragEnd() {
         val drag = _dragState.value
-        val shape = drag.shape ?: return
+        drag.shape ?: return
 
         // Block placement while a clear animation is running
         if (_gameState.value.clearingCells.isNotEmpty()) {
@@ -170,108 +182,120 @@ class GameViewModel : ViewModel() {
             return
         }
 
+        // On valid placement, trigger drop animation (grid update deferred to onDropAnimationDone);
+        // on miss, clear immediately
         if (drag.ghostValid && drag.ghostRow >= 0 && drag.ghostCol >= 0) {
-            // Place the shape
-            val grid = _gameState.value.grid
-            val newGrid = GameEngine.placeShape(grid, shape, drag.ghostRow, drag.ghostCol)
+            _dragState.update { it.copy(isDropAnimating = true) }
+        } else {
+            _dragState.value = DragState()
+        }
+    }
 
-            // Score: placement points always awarded immediately
-            val placementPts = GameEngine.placementPoints(shape)
+    /** Called by the UI after the drop animation finishes — performs the actual placement. */
+    fun onDropAnimationDone() {
+        val drag = _dragState.value
+        val shape = drag.shape
 
-            // Remove the placed shape from the tray
-            val newShapes = _gameState.value.currentShapes.toMutableList()
-            newShapes[drag.shapeIndex] = null
-
-            // If all 3 shapes placed, generate a new triple
-            val finalShapes = if (newShapes.all { it == null }) {
-                GameEngine.generateShapeTriple()
-            } else {
-                newShapes
-            }
-
-            // Check for line clears
-            val lines = GameEngine.findCompleteLines(newGrid)
-
-            if (!lines.isEmpty()) {
-                // Collect the set of cells that will be cleared
-                val clearing = mutableSetOf<Pair<Int, Int>>()
-                for (r in lines.rows) {
-                    for (c in 0 until GRID_SIZE) clearing.add(r to c)
-                }
-                for (c in lines.cols) {
-                    for (r in 0 until GRID_SIZE) clearing.add(r to c)
-                }
-
-                // Compute center of cleared area for score pop positioning
-                val clearCenterRow = clearing.map { it.first }.average().toFloat()
-                val clearCenterCol = clearing.map { it.second }.average().toFloat()
-
-                // Haptic: placement tap
-                if (HAPTIC_ENABLED) _hapticEvents.tryEmit(HapticEvent.PLACE)
-
-                // Phase 1: show placed shape + mark clearing cells (triggers animation)
-                _gameState.update {
-                    it.copy(
-                        grid = newGrid,
-                        currentShapes = finalShapes,
-                        score = it.score + placementPts,
-                        clearingCells = clearing
-                    )
-                }
-
-                // Phase 2: after animation delay, actually clear and award bonus
-                viewModelScope.launch {
-                    delay(CLEAR_ANIMATION_MS)
-
-                    val clearResult = GameEngine.clearLines(newGrid, lines)
-                    val newScore = _gameState.value.score + clearResult.points
-                    val newHighScore = maxOf(newScore, _gameState.value.highScore)
-                    val gameOver = GameEngine.isGameOver(clearResult.grid, finalShapes)
-
-                    _gameState.update {
-                        it.copy(
-                            grid = clearResult.grid,
-                            score = newScore,
-                            highScore = newHighScore,
-                            isGameOver = gameOver,
-                            clearingCells = emptySet()
-                        )
-                    }
-
-                    // Haptic: stronger buzz for line clear
-                    if (HAPTIC_ENABLED) _hapticEvents.tryEmit(HapticEvent.LINE_CLEAR)
-
-                    // Show score pop for line clear bonus
-                    emitScorePop(clearResult.points, clearCenterRow, clearCenterCol, isBonus = true)
-                }
-            } else {
-                // Haptic: placement tap
-                if (HAPTIC_ENABLED) _hapticEvents.tryEmit(HapticEvent.PLACE)
-
-                // No lines to clear — update immediately
-                val newScore = _gameState.value.score + placementPts
-                val newHighScore = maxOf(newScore, _gameState.value.highScore)
-                val gameOver = GameEngine.isGameOver(newGrid, finalShapes)
-
-                _gameState.update {
-                    it.copy(
-                        grid = newGrid,
-                        currentShapes = finalShapes,
-                        score = newScore,
-                        highScore = newHighScore,
-                        isGameOver = gameOver
-                    )
-                }
-
-                // Show score pop for placement points
-                val shapeCenterRow = drag.ghostRow + shape.height / 2f
-                val shapeCenterCol = drag.ghostCol + shape.width / 2f
-                emitScorePop(placementPts, shapeCenterRow, shapeCenterCol, isBonus = false)
-            }
+        if (shape != null && drag.ghostValid && drag.ghostRow >= 0 && drag.ghostCol >= 0) {
+            executePlacement(drag, shape)
         }
 
-        // Clear drag state
         _dragState.value = DragState()
+    }
+
+    /** Applies a valid shape placement to the game state (grid, score, line clears). */
+    private fun executePlacement(drag: DragState, shape: Shape) {
+        val grid = _gameState.value.grid
+        val newGrid = GameEngine.placeShape(grid, shape, drag.ghostRow, drag.ghostCol)
+
+        val placementPts = GameEngine.placementPoints(shape)
+
+        val newShapes = _gameState.value.currentShapes.toMutableList()
+        newShapes[drag.shapeIndex] = null
+
+        val finalShapes = if (newShapes.all { it == null }) {
+            GameEngine.generateShapeTriple()
+        } else {
+            newShapes
+        }
+
+        val lines = GameEngine.findCompleteLines(newGrid)
+
+        if (!lines.isEmpty()) {
+            val clearing = mutableSetOf<Pair<Int, Int>>()
+            for (r in lines.rows) {
+                for (c in 0 until GRID_SIZE) clearing.add(r to c)
+            }
+            for (c in lines.cols) {
+                for (r in 0 until GRID_SIZE) clearing.add(r to c)
+            }
+
+            val clearCenterRow = clearing.map { it.first }.average().toFloat()
+            val clearCenterCol = clearing.map { it.second }.average().toFloat()
+
+            if (HAPTIC_ENABLED) _hapticEvents.tryEmit(HapticEvent.PLACE)
+
+            _gameState.update {
+                it.copy(
+                    grid = newGrid,
+                    currentShapes = finalShapes,
+                    score = it.score + placementPts,
+                    clearingCells = clearing
+                )
+            }
+
+            viewModelScope.launch {
+                delay(CLEAR_ANIMATION_MS)
+
+                val clearResult = GameEngine.clearLines(newGrid, lines)
+                val newScore = _gameState.value.score + clearResult.points
+                val newHighScore = maxOf(newScore, _gameState.value.highScore)
+                persistHighScoreIfNeeded(newHighScore)
+                val gameOver = GameEngine.isGameOver(clearResult.grid, finalShapes)
+
+                _gameState.update {
+                    it.copy(
+                        grid = clearResult.grid,
+                        score = newScore,
+                        highScore = newHighScore,
+                        isGameOver = gameOver,
+                        clearingCells = emptySet()
+                    )
+                }
+
+                if (HAPTIC_ENABLED) _hapticEvents.tryEmit(HapticEvent.LINE_CLEAR)
+
+                emitScorePop(clearResult.points, clearCenterRow, clearCenterCol, isBonus = true)
+            }
+        } else {
+            if (HAPTIC_ENABLED) _hapticEvents.tryEmit(HapticEvent.PLACE)
+
+            val newScore = _gameState.value.score + placementPts
+            val newHighScore = maxOf(newScore, _gameState.value.highScore)
+            persistHighScoreIfNeeded(newHighScore)
+            val gameOver = GameEngine.isGameOver(newGrid, finalShapes)
+
+            _gameState.update {
+                it.copy(
+                    grid = newGrid,
+                    currentShapes = finalShapes,
+                    score = newScore,
+                    highScore = newHighScore,
+                    isGameOver = gameOver
+                )
+            }
+
+            val shapeCenterRow = drag.ghostRow + shape.height / 2f
+            val shapeCenterCol = drag.ghostCol + shape.width / 2f
+            emitScorePop(placementPts, shapeCenterRow, shapeCenterCol, isBonus = false)
+        }
+    }
+
+    /** Persist high score to DataStore if it increased. */
+    private fun persistHighScoreIfNeeded(newHighScore: Int) {
+        if (newHighScore > _gameState.value.highScore) {
+            viewModelScope.launch { highScoreRepo.saveHighScore(newHighScore) }
+        }
     }
 
     companion object {

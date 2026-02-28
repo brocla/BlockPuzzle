@@ -282,6 +282,100 @@ class GameEngineTest {
         assertFalse(GameEngine.canFitAnywhere(grid, dot))
     }
 
+    // ──────────────────────────── CompleteLines ────────────────────────────
+
+    @Test
+    fun `CompleteLines isEmpty - empty is true`() {
+        assertTrue(CompleteLines().isEmpty())
+    }
+
+    @Test
+    fun `CompleteLines isEmpty - rows only is false`() {
+        assertFalse(CompleteLines(rows = setOf(0)).isEmpty())
+    }
+
+    @Test
+    fun `CompleteLines isEmpty - cols only is false`() {
+        assertFalse(CompleteLines(cols = setOf(3)).isEmpty())
+    }
+
+    // ──────────────────────────── clearLines - higher multipliers ────────────────
+
+    @Test
+    fun `clearLines - three rows get 6x multiplier`() {
+        // 3 rows = 24 cells, multiplier = 3*(3+1)/2 = 6
+        // 24 * 10 * 6 = 1440
+        var grid = fillRow(empty, 0)
+        grid = fillRow(grid, 1)
+        grid = fillRow(grid, 2)
+        val lines = CompleteLines(rows = setOf(0, 1, 2))
+        val result = GameEngine.clearLines(grid, lines)
+        assertEquals(1440, result.points)
+    }
+
+    @Test
+    fun `clearLines - four lines get 10x multiplier`() {
+        // 2 rows + 2 cols: lineCount = 4, multiplier = 4*(4+1)/2 = 10
+        // Unique cells: 2*8 + 2*8 - 4 intersections = 28
+        // 28 * 10 * 10 = 2800
+        var grid = fillRow(empty, 0)
+        grid = fillRow(grid, 1)
+        grid = fillCol(grid, 0)
+        grid = fillCol(grid, 1)
+        val lines = CompleteLines(rows = setOf(0, 1), cols = setOf(0, 1))
+        val result = GameEngine.clearLines(grid, lines)
+        assertEquals(2800, result.points)
+    }
+
+    @Test
+    fun `clearLines - clears intersecting row and column cells`() {
+        var grid = fillRow(empty, 3)
+        grid = fillCol(grid, 5)
+        val lines = CompleteLines(rows = setOf(3), cols = setOf(5))
+        val result = GameEngine.clearLines(grid, lines)
+        // All cells in row 3 and column 5 should be cleared
+        for (c in 0 until GRID_SIZE) {
+            assertFalse("Row 3, col $c should be cleared", result.grid[3][c].filled)
+        }
+        for (r in 0 until GRID_SIZE) {
+            assertFalse("Row $r, col 5 should be cleared", result.grid[r][5].filled)
+        }
+    }
+
+    // ──────────────────────────── canPlace - edge cases ────────────────────────────
+
+    @Test
+    fun `canPlace - shape at grid bottom-right corner`() {
+        val square = shape(0 to 0, 0 to 1, 1 to 0, 1 to 1)
+        assertTrue(GameEngine.canPlace(empty, square, 6, 6))   // fits in rows 6-7, cols 6-7
+        assertFalse(GameEngine.canPlace(empty, square, 7, 7))  // row 8 and col 8 out
+    }
+
+    @Test
+    fun `canPlace - negative row is rejected`() {
+        val dot = shape(0 to 0)
+        assertFalse(GameEngine.canPlace(empty, dot, -1, 0))
+    }
+
+    @Test
+    fun `canPlace - negative col is rejected`() {
+        val dot = shape(0 to 0)
+        assertFalse(GameEngine.canPlace(empty, dot, 0, -1))
+    }
+
+    // ──────────────────────────── isGameOver - edge cases ────────────────────────────
+
+    @Test
+    fun `isGameOver - empty shapes list is game over`() {
+        assertTrue(GameEngine.isGameOver(empty, emptyList()))
+    }
+
+    @Test
+    fun `isGameOver - mix of null and fitting shape is not game over`() {
+        val dot = shape(0 to 0)
+        assertFalse(GameEngine.isGameOver(empty, listOf(null, dot, null)))
+    }
+
     // ──────────────────────────── generateShapeTriple ────────────────────────────
 
     @Test
@@ -299,6 +393,20 @@ class GameEngineTest {
         val a = GameEngine.generateShapeTriple(Random(123))
         val b = GameEngine.generateShapeTriple(Random(123))
         assertEquals(a, b)
+    }
+
+    @Test
+    fun `generateShapeTriple - never assigns NONE color`() {
+        // Test across multiple seeds to increase confidence
+        for (seed in 0..99) {
+            val shapes = GameEngine.generateShapeTriple(Random(seed))
+            shapes.forEach { shape ->
+                assertTrue(
+                    "Shape should not have NONE color (seed=$seed)",
+                    shape.color != BlockColor.NONE
+                )
+            }
+        }
     }
 
     // ──────────────────────────── placementPoints ────────────────────────────

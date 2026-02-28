@@ -1,5 +1,8 @@
 package com.blockpuzzle.ui.screens
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -177,12 +180,24 @@ fun GameScreen(
             FloatingDragShape(
                 dragState = dragState,
                 gridCellSizePx = viewModel.cellSizePx,
-                parentRootOffset = boxPositionInRoot
+                parentRootOffset = boxPositionInRoot,
+                gridRootOffset = gridPositionInRoot,
+                gridPaddingOffset = viewModel.gridScreenOffset,
+                onDropAnimationDone = { viewModel.onDropAnimationDone() }
             )
         }
 
-        // Game over overlay
-        if (gameState.isGameOver) {
+        // Game over overlay — delayed so the player can see the board first
+        var showGameOver by remember { mutableStateOf(false) }
+        LaunchedEffect(gameState.isGameOver) {
+            if (gameState.isGameOver) {
+                delay(1500)
+                showGameOver = true
+            } else {
+                showGameOver = false
+            }
+        }
+        if (showGameOver) {
             GameOverOverlay(
                 score = gameState.score,
                 highScore = gameState.highScore,
@@ -194,39 +209,95 @@ fun GameScreen(
 
 /**
  * The shape that floats under the player's finger during drag.
- * Drawn at a larger scale so it's visible past the finger.
+ * Animates scale up on lift and moves to the grid target on drop.
  */
 @Composable
-private fun FloatingDragShape(dragState: DragState, gridCellSizePx: Float, parentRootOffset: Offset) {
+private fun FloatingDragShape(
+    dragState: DragState,
+    gridCellSizePx: Float,
+    parentRootOffset: Offset,
+    gridRootOffset: Offset,
+    gridPaddingOffset: Offset,
+    onDropAnimationDone: () -> Unit
+) {
     val shape = dragState.shape ?: return
     val density = LocalDensity.current
     val cellSizeDp = with(density) { gridCellSizePx.toDp() }
 
     val heightDp = cellSizeDp * shape.height
-    // ShapePreview uses a square canvas of maxDim × maxDim and centers the cells inside.
-    // Match that size so the cells align with our offset calculation.
-    val maxDim = maxOf(shape.width, shape.height, 1)
+    // Use maxDim=5 to match ShapePreview's fixed canvas size
+    val maxDim = 5
     val canvasSizeDp = cellSizeDp * maxDim
 
-    // Lift = 96dp + one grid cell height (matches ghost offset calculation)
     val liftDp = 96.dp + cellSizeDp
 
-    // Convert finger from root (window) coords to parent Box coords.
-    // The parent Box is offset from root by innerPadding (status bar, etc.).
+    // --- Drag position (shape center, in parent dp) ---
     val fingerInParent = dragState.fingerRootOffset - parentRootOffset
+    val dragCenterX = with(density) { fingerInParent.x.toDp() }
+    val dragCenterY = with(density) { fingerInParent.y.toDp() } - heightDp / 2 - liftDp
 
-    // Shape center: horizontally on finger, lifted above finger vertically.
-    // ShapePreview centers cells in the square canvas, so canvas center = shape center.
-    val centerX = with(density) { fingerInParent.x.toDp() }
-    val centerY = with(density) { fingerInParent.y.toDp() } - heightDp / 2 - liftDp
+    // --- Target grid position (shape center, in parent dp) ---
+    val gridInParent = gridRootOffset - parentRootOffset
+    val targetCenterX = with(density) { (gridInParent.x + gridPaddingOffset.x).toDp() } +
+        cellSizeDp * (dragState.ghostCol + shape.width / 2f)
+    val targetCenterY = with(density) { (gridInParent.y + gridPaddingOffset.y).toDp() } +
+        cellSizeDp * (dragState.ghostRow + shape.height / 2f)
+
+    // Lift animation: scale from 0.5 to 1.0
+    val liftScale = remember(shape) { Animatable(0.5f) }
+    LaunchedEffect(shape) {
+        liftScale.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing)
+        )
+    }
+
+    // Drop animation: move to grid target
+    val dropProgress = remember { Animatable(0f) }
+    LaunchedEffect(dragState.isDropAnimating) {
+        if (dragState.isDropAnimating) {
+            dropProgress.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing)
+            )
+            onDropAnimationDone()
+        } else {
+            dropProgress.snapTo(0f)
+        }
+    }
+
+    // Interpolate position during drop
+    val t = dropProgress.value
+    val centerX = if (dragState.isDropAnimating) {
+        dragCenterX + (targetCenterX - dragCenterX) * t
+    } else {
+        dragCenterX
+    }
+    val centerY = if (dragState.isDropAnimating) {
+        dragCenterY + (targetCenterY - dragCenterY) * t
+    } else {
+        dragCenterY
+    }
+
     val offsetX = centerX - canvasSizeDp / 2
     val offsetY = centerY - canvasSizeDp / 2
+
+    val scale = if (dragState.isDropAnimating) 1f else liftScale.value
+    val alpha = if (dragState.isDropAnimating) {
+        0.8f + 0.2f * t  // 0.8 → 1.0 (become fully opaque as it lands)
+    } else {
+        0.8f
+    }
 
     Box(
         modifier = Modifier
             .offset(x = offsetX, y = offsetY)
             .size(canvasSizeDp)
-            .graphicsLayer { alpha = 0.8f }
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                this.alpha = alpha
+            }
     ) {
         ShapePreview(
             shape = shape,
