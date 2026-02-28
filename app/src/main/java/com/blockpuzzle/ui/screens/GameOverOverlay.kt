@@ -182,7 +182,7 @@ fun GameOverOverlay(
 
 // ── Confetti ──
 
-private data class ConfettiParticle(
+internal data class ConfettiParticle(
     val x: Float,         // 0..1 horizontal position
     val speed: Float,     // fall speed multiplier
     val size: Float,      // rect size in dp
@@ -192,7 +192,7 @@ private data class ConfettiParticle(
     val rotation: Float   // initial rotation
 )
 
-private val confettiColors = listOf(
+internal val confettiColors = listOf(
     Color(0xFFFFD54F), // Gold
     Color(0xFFE53935), // Ruby
     Color(0xFF1E88E5), // Sapphire
@@ -203,7 +203,7 @@ private val confettiColors = listOf(
 )
 
 @Composable
-private fun ConfettiEffect() {
+internal fun ConfettiEffect() {
     val density = LocalDensity.current
     val particles = remember {
         val rng = Random(System.nanoTime())

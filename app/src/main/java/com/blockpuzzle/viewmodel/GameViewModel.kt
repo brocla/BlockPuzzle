@@ -71,6 +71,19 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     val scorePops: StateFlow<List<ScorePop>> = _scorePops.asStateFlow()
     private var nextPopId = 0L
 
+    /** High score snapshot taken at the start of each game (before any in-game updates). */
+    private var startingHighScore: Int = 0
+    /** True once the mid-game "beat the high score" confetti has fired this game. */
+    private var midGameConfettiFired: Boolean = false
+
+    private val _showMidGameConfetti = MutableStateFlow(false)
+    val showMidGameConfetti: StateFlow<Boolean> = _showMidGameConfetti.asStateFlow()
+
+    /** Called by the UI after the mid-game confetti animation finishes. */
+    fun dismissMidGameConfetti() {
+        _showMidGameConfetti.value = false
+    }
+
     /** Called by the UI after a score pop animation finishes. */
     fun dismissScorePop(id: Long) {
         _scorePops.update { pops -> pops.filter { it.id != id } }
@@ -86,16 +99,23 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     var cellSizePx: Float = 0f
 
     init {
-        // Load persisted high score, then start the game
+        startNewGame()
+        // Load persisted high score — arrives after startNewGame, so patch startingHighScore too
         viewModelScope.launch {
             val savedHighScore = highScoreRepo.highScoreFlow.first()
             _gameState.update { it.copy(highScore = savedHighScore) }
+            // startNewGame already ran with highScore=0, so fix up the snapshot
+            if (!midGameConfettiFired) {
+                startingHighScore = savedHighScore
+            }
         }
-        startNewGame()
     }
 
     fun startNewGame() {
         _gameState.update {
+            startingHighScore = it.highScore
+            midGameConfettiFired = false
+            _showMidGameConfetti.value = false
             GameState(
                 grid = GameState.emptyGrid(),
                 currentShapes = GameEngine.generateShapeTriple(),
@@ -266,6 +286,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                 if (HAPTIC_ENABLED) _hapticEvents.tryEmit(HapticEvent.LINE_CLEAR)
 
                 emitScorePop(clearResult.points, clearCenterRow, clearCenterCol, isBonus = true)
+                checkMidGameConfetti(newScore)
             }
         } else {
             if (HAPTIC_ENABLED) _hapticEvents.tryEmit(HapticEvent.PLACE)
@@ -288,6 +309,15 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             val shapeCenterRow = drag.ghostRow + shape.height / 2f
             val shapeCenterCol = drag.ghostCol + shape.width / 2f
             emitScorePop(placementPts, shapeCenterRow, shapeCenterCol, isBonus = false)
+            checkMidGameConfetti(newScore)
+        }
+    }
+
+    /** Trigger mid-game confetti the first time the score exceeds the starting high score. */
+    private fun checkMidGameConfetti(newScore: Int) {
+        if (!midGameConfettiFired && startingHighScore > 0 && newScore > startingHighScore) {
+            midGameConfettiFired = true
+            _showMidGameConfetti.value = true
         }
     }
 
