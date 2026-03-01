@@ -126,6 +126,16 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         _dragState.value = DragState()
     }
 
+    /** Rotate the shape at the given tray index 90° clockwise. */
+    fun rotateShape(index: Int) {
+        _gameState.update { state ->
+            val shape = state.currentShapes[index] ?: return@update state
+            val newShapes = state.currentShapes.toMutableList()
+            newShapes[index] = shape.rotateCW()
+            state.copy(currentShapes = newShapes)
+        }
+    }
+
     /** Called when the player starts dragging a shape from the tray. */
     fun onDragStart(shapeIndex: Int, shape: Shape) {
         // Block drags while a clear animation is running
@@ -253,7 +263,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             val clearCenterRow = clearing.map { it.first }.average().toFloat()
             val clearCenterCol = clearing.map { it.second }.average().toFloat()
 
-            if (HAPTIC_ENABLED) _hapticEvents.tryEmit(HapticEvent.PLACE)
+            if (hapticEnabled) _hapticEvents.tryEmit(HapticEvent.PLACE)
 
             _gameState.update {
                 it.copy(
@@ -283,13 +293,13 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 }
 
-                if (HAPTIC_ENABLED) _hapticEvents.tryEmit(HapticEvent.LINE_CLEAR)
+                if (hapticEnabled) _hapticEvents.tryEmit(HapticEvent.LINE_CLEAR)
 
                 emitScorePop(clearResult.points, clearCenterRow, clearCenterCol, isBonus = true)
                 checkMidGameConfetti(newScore)
             }
         } else {
-            if (HAPTIC_ENABLED) _hapticEvents.tryEmit(HapticEvent.PLACE)
+            if (hapticEnabled) _hapticEvents.tryEmit(HapticEvent.PLACE)
 
             val newScore = _gameState.value.score + placementPts
             val newHighScore = maxOf(newScore, _gameState.value.highScore)
@@ -330,9 +340,10 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
         const val CLEAR_ANIMATION_MS = 750L
-        /** Set to true to enable haptic feedback on placement and line clear. */
-        const val HAPTIC_ENABLED = false
     }
+
+    /** Set by MainActivity from SettingsRepository. */
+    var hapticEnabled: Boolean = false
 
     /** Cancel drag without placing. */
     fun onDragCancel() {

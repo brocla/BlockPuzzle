@@ -54,6 +54,7 @@ import com.blockpuzzle.viewmodel.HapticEvent
 @Composable
 fun GameScreen(
     viewModel: GameViewModel,
+    onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val gameState by viewModel.gameState.collectAsState()
@@ -98,7 +99,8 @@ fun GameScreen(
 
             ScoreBar(
                 score = gameState.score,
-                highScore = gameState.highScore
+                highScore = gameState.highScore,
+                onSettingsClick = onSettingsClick
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -151,6 +153,7 @@ fun GameScreen(
                         },
                         onDragEnd = { viewModel.onDragEnd() },
                         onDragCancel = { viewModel.onDragCancel() },
+                        onDoubleTap = { viewModel.rotateShape(index) },
                         isDragging = dragState.shapeIndex == index,
                         dimmed = !canFit
                     )

@@ -20,20 +20,22 @@ val GhostInvalid = Color(0x44FF1744)    // Red tint for invalid placement
 
 // ── Block color palettes ──
 
-enum class ColorPalette { JEWEL, VIVID, EARTHY }
+enum class ColorPalette { JEWEL, VIVID, EARTHY, PASTEL, NEON }
 
 /** Active palette — change this to switch all block colors. */
 var activePalette: ColorPalette = ColorPalette.JEWEL
 
-private data class PaletteColors(
+data class PaletteColors(
     val red: Color,
     val blue: Color,
     val green: Color,
     val purple: Color,
     val orange: Color
-)
+) {
+    fun toList(): List<Color> = listOf(red, blue, green, purple, orange)
+}
 
-private val JewelPalette = PaletteColors(
+val JewelPalette = PaletteColors(
     red    = Color(0xFFE53935),  // Ruby
     blue   = Color(0xFF1E88E5),  // Sapphire
     green  = Color(0xFF43A047),  // Emerald
@@ -41,7 +43,7 @@ private val JewelPalette = PaletteColors(
     orange = Color(0xFFFB8C00)   // Tangerine
 )
 
-private val VividPalette = PaletteColors(
+val VividPalette = PaletteColors(
     red    = Color(0xFFFF5252),  // Coral
     blue   = Color(0xFF40C4FF),  // Sky
     green  = Color(0xFF76FF03),  // Lime
@@ -49,7 +51,7 @@ private val VividPalette = PaletteColors(
     orange = Color(0xFFFFAB40)   // Peach
 )
 
-private val EarthyPalette = PaletteColors(
+val EarthyPalette = PaletteColors(
     red    = Color(0xFFC62828),  // Brick
     blue   = Color(0xFF0277BD),  // Ocean
     green  = Color(0xFF558B2F),  // Moss
@@ -57,10 +59,36 @@ private val EarthyPalette = PaletteColors(
     orange = Color(0xFFFF8F00)   // Amber
 )
 
+val PastelPalette = PaletteColors(
+    red    = Color(0xFFF48FB1),  // Rose
+    blue   = Color(0xFF81D4FA),  // Baby blue
+    green  = Color(0xFFA5D6A7),  // Mint
+    purple = Color(0xFFCE93D8),  // Lavender
+    orange = Color(0xFFFFCC80)   // Peach
+)
+
+val NeonPalette = PaletteColors(
+    red    = Color(0xFFFF0066),  // Hot pink
+    blue   = Color(0xFF00E5FF),  // Electric blue
+    green  = Color(0xFF39FF14),  // Neon green
+    purple = Color(0xFFBF00FF),  // Electric purple
+    orange = Color(0xFFFFEA00)   // Neon yellow
+)
+
+fun paletteOf(palette: ColorPalette): PaletteColors = when (palette) {
+    ColorPalette.JEWEL -> JewelPalette
+    ColorPalette.VIVID -> VividPalette
+    ColorPalette.EARTHY -> EarthyPalette
+    ColorPalette.PASTEL -> PastelPalette
+    ColorPalette.NEON -> NeonPalette
+}
+
 private fun currentPalette(): PaletteColors = when (activePalette) {
     ColorPalette.JEWEL -> JewelPalette
     ColorPalette.VIVID -> VividPalette
     ColorPalette.EARTHY -> EarthyPalette
+    ColorPalette.PASTEL -> PastelPalette
+    ColorPalette.NEON -> NeonPalette
 }
 
 /** Map model BlockColor to Compose Color using the active palette. */

@@ -92,12 +92,14 @@ object GameEngine {
     fun isGameOver(grid: List<List<Cell>>, shapes: List<Shape?>): Boolean =
         shapes.filterNotNull().none { canFitAnywhere(grid, it) }
 
-    /** Generate 3 random shapes with random colors. */
+    /** Generate 3 random shapes with random colors and random orientations. */
     fun generateShapeTriple(random: Random = Random): List<Shape> =
         List(3) {
             val template = ShapeTemplates.ALL[random.nextInt(ShapeTemplates.ALL.size)]
             val color = ShapeTemplates.COLORS[random.nextInt(ShapeTemplates.COLORS.size)]
-            Shape(cells = template, color = color)
+            var shape = template.toShape(color)
+            repeat(random.nextInt(template.rotations)) { shape = shape.rotateCW() }
+            shape
         }
 
     /** Points awarded for placing a shape (before any line-clear bonus). */

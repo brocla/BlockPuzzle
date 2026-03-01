@@ -1,6 +1,7 @@
 package com.blockpuzzle.ui.components
 
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -31,6 +32,7 @@ fun DraggableShapePreview(
     onDrag: (Offset) -> Unit,
     onDragEnd: () -> Unit,
     onDragCancel: () -> Unit,
+    onDoubleTap: () -> Unit,
     isDragging: Boolean,
     dimmed: Boolean = false,
     modifier: Modifier = Modifier
@@ -44,6 +46,12 @@ fun DraggableShapePreview(
             .padding(12.dp)
             .onGloballyPositioned { coords ->
                 positionInRoot = coords.positionInRoot()
+            }
+            .pointerInput(shape) {
+                if (shape == null) return@pointerInput
+                detectTapGestures(
+                    onDoubleTap = { onDoubleTap() }
+                )
             }
             .pointerInput(shape) {
                 if (shape == null) return@pointerInput

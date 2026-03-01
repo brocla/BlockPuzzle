@@ -5,6 +5,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,6 +25,7 @@ import com.blockpuzzle.ui.theme.TextGold
 fun ScoreBar(
     score: Int,
     highScore: Int,
+    onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -31,6 +37,16 @@ fun ScoreBar(
     ) {
         ScoreColumn(label = "Score", value = score)
         ScoreColumn(label = "Best", value = highScore)
+        IconButton(
+            onClick = onSettingsClick,
+            modifier = Modifier.size(40.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = "Settings",
+                tint = TextCream
+            )
+        }
     }
 }
 
@@ -54,6 +70,6 @@ private fun ScoreColumn(label: String, value: Int) {
 @Composable
 private fun ScoreBarPreview() {
     BlockPuzzleTheme {
-        ScoreBar(score = 1250, highScore = 3400)
+        ScoreBar(score = 1250, highScore = 3400, onSettingsClick = {})
     }
 }

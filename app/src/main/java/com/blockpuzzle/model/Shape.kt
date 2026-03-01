@@ -13,6 +13,13 @@ data class Shape(
 
     /** Bounding box height (rows). */
     val height: Int get() = cells.maxOf { it.row } + 1
+
+    /** Returns a new shape rotated 90° clockwise, preserving color. */
+    fun rotateCW(): Shape {
+        val maxRow = cells.maxOf { it.row }
+        val rotated = cells.map { CellOffset(row = it.col, col = maxRow - it.row) }
+        return Shape(rotated, color)
+    }
 }
 
 /**
