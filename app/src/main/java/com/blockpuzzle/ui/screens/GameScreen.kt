@@ -188,13 +188,10 @@ fun GameScreen(
         }
 
         // Mid-game confetti — triggered once when the player beats their best score
+        // Stays on screen for the rest of the game; cleared on new game
         val showMidGameConfetti by viewModel.showMidGameConfetti.collectAsState()
         if (showMidGameConfetti) {
             ConfettiEffect()
-            LaunchedEffect(Unit) {
-                delay(3000) // matches confetti animation duration
-                viewModel.dismissMidGameConfetti()
-            }
         }
 
         // Game over overlay — delayed so the player can see the board first

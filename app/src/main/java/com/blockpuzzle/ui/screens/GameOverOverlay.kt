@@ -189,7 +189,8 @@ internal data class ConfettiParticle(
     val color: Color,
     val wobbleSpeed: Float,
     val wobbleAmp: Float, // horizontal wobble amplitude
-    val rotation: Float   // initial rotation
+    val rotation: Float,  // initial rotation
+    val landingY: Float = 1f // 0..1 y-coordinate where particle comes to rest
 )
 
 internal val confettiColors = listOf(
@@ -207,7 +208,13 @@ internal fun ConfettiEffect() {
     val density = LocalDensity.current
     val particles = remember {
         val rng = Random(System.nanoTime())
-        List(50) {
+        val numColumns = 25
+        // Average particle size in dp — used to compute stack height per slot
+        val avgSizeDp = 7f // midpoint of 4..10 range
+        val slotHeight = (avgSizeDp * 1.4f) / 800f // approx fraction of screen per stacked piece
+
+        // Generate raw particles first
+        val raw = List(50) {
             ConfettiParticle(
                 x = rng.nextFloat(),
                 speed = 0.5f + rng.nextFloat() * 0.8f,
@@ -217,6 +224,18 @@ internal fun ConfettiEffect() {
                 wobbleAmp = 0.01f + rng.nextFloat() * 0.03f,
                 rotation = rng.nextFloat() * 360f
             )
+        }
+
+        // Sort by arrival time so earlier-landing particles get bottom slots
+        val sorted = raw.sortedBy { (-0.1f + 1f) / (it.speed * 1.5f) } // time to reach y=1.0
+
+        // Assign column-based landing positions
+        val columnCounts = IntArray(numColumns)
+        sorted.map { p ->
+            val col = (p.x * numColumns).toInt().coerceIn(0, numColumns - 1)
+            val slot = columnCounts[col]
+            columnCounts[col]++
+            p.copy(landingY = 1f - slot * slotHeight)
         }
     }
 
@@ -232,12 +251,16 @@ internal fun ConfettiEffect() {
     Canvas(modifier = Modifier.fillMaxSize()) {
         val t = fallProgress.value
         for (p in particles) {
-            // Each particle falls at its own speed — no clamping so fast ones exit the screen
             val particleT = t * p.speed
-            // Start above the screen, travel well past the bottom
-            val y = -0.1f + particleT * 1.5f
-            if (y > 1.1f) continue // off-screen, skip drawing
-            val wobble = kotlin.math.sin(particleT * p.wobbleSpeed * Math.PI.toFloat() * 2f) * p.wobbleAmp
+            // Falling y before clamping
+            val fallingY = -0.1f + particleT * 1.5f
+            // Clamp at this particle's landing position — it piles up instead of falling off
+            val landed = fallingY >= p.landingY
+            val y = fallingY.coerceAtMost(p.landingY)
+            if (y < -0.1f) continue // not yet on screen
+            // Stop wobbling once landed
+            val wobble = if (landed) 0f
+                else kotlin.math.sin(particleT * p.wobbleSpeed * Math.PI.toFloat() * 2f) * p.wobbleAmp
             val x = p.x + wobble
 
             val px = x * size.width
