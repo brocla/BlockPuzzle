@@ -1,3 +1,6 @@
-# Default ignored files
-/shelf/
+# Machine-specific settings
 /workspace.xml
+/shelf/
+/caches/
+/deploymentTargetSelector.xml
+/assetWizardSettings.xml

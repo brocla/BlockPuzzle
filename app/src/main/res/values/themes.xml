@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.BlockPuzzle" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/dark_walnut</item>
+        <item name="android:statusBarColor">@color/dark_walnut</item>
+        <item name="android:navigationBarColor">@color/dark_walnut</item>
+        <!-- Make the mandatory Android 12+ system splash a plain dark screen (no icon) -->
+        <item name="android:windowSplashScreenBackground">@color/dark_walnut</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+    </style>
+
+    <style name="Theme.BlockPuzzle.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/dark_walnut</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_block_puzzle</item>
+        <item name="postSplashScreenTheme">@style/Theme.BlockPuzzle</item>
+    </style>
+
+</resources>

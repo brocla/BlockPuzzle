@@ -1,15 +1,55 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
+# Built application files
+*.apk
+*.aab
+*.ap_
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+
+# Gradle files
+.gradle/
+build/
 /captures
-.externalNativeBuild
-.cxx
+
+# Local configuration file (sdk path, etc)
 local.properties
+
+# IntelliJ IDEA / Android Studio
+*.iml
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/deploymentTargetSelector.xml
+.idea/shelf/
+
+# Kotlin compiler
+.kotlin/
+
+# NDK
+.externalNativeBuild/
+.cxx/
+
+# Signing keys
+*.jks
+*.keystore
+keystore.properties
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Python bytecode (icon_gen.py)
+__pycache__/
+*.pyc
