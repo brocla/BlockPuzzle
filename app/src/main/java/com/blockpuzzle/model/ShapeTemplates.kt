@@ -104,7 +104,7 @@ object ShapeTemplates {
             0 to 0, 0 to 1, 0 to 2,
             1 to 0, 1 to 1, 1 to 2
         ),
-        rotations = 4
+        rotations = 2
     )
 
     /** All available templates (15 canonical shapes). */

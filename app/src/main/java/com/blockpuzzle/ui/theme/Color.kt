@@ -83,13 +83,7 @@ fun paletteOf(palette: ColorPalette): PaletteColors = when (palette) {
     ColorPalette.NEON -> NeonPalette
 }
 
-private fun currentPalette(): PaletteColors = when (activePalette) {
-    ColorPalette.JEWEL -> JewelPalette
-    ColorPalette.VIVID -> VividPalette
-    ColorPalette.EARTHY -> EarthyPalette
-    ColorPalette.PASTEL -> PastelPalette
-    ColorPalette.NEON -> NeonPalette
-}
+private fun currentPalette(): PaletteColors = paletteOf(activePalette)
 
 /** Map model BlockColor to Compose Color using the active palette. */
 fun BlockColor.toComposeColor(): Color {

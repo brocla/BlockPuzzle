@@ -56,18 +56,7 @@ object GameEngine {
         if (lines.isEmpty()) return ClearResult(grid, 0)
 
         val mutable = grid.map { it.toMutableList() }
-        val clearedCells = mutableSetOf<Pair<Int, Int>>()
-
-        for (r in lines.rows) {
-            for (c in 0 until GRID_SIZE) {
-                clearedCells.add(r to c)
-            }
-        }
-        for (c in lines.cols) {
-            for (r in 0 until GRID_SIZE) {
-                clearedCells.add(r to c)
-            }
-        }
+        val clearedCells = lines.toCellSet(GRID_SIZE)
 
         for ((r, c) in clearedCells) {
             mutable[r][c] = Cell()
@@ -95,8 +84,8 @@ object GameEngine {
     /** Generate 3 random shapes with random colors and random orientations. */
     fun generateShapeTriple(random: Random = Random): List<Shape> =
         List(3) {
-            val template = ShapeTemplates.ALL[random.nextInt(ShapeTemplates.ALL.size)]
-            val color = ShapeTemplates.COLORS[random.nextInt(ShapeTemplates.COLORS.size)]
+            val template = ShapeTemplates.ALL.random(random)
+            val color = ShapeTemplates.COLORS.random(random)
             var shape = template.toShape(color)
             repeat(random.nextInt(template.rotations)) { shape = shape.rotateCW() }
             shape
@@ -112,6 +101,17 @@ data class CompleteLines(
     val cols: Set<Int> = emptySet()
 ) {
     fun isEmpty(): Boolean = rows.isEmpty() && cols.isEmpty()
+    fun isNotEmpty(): Boolean = !isEmpty()
+
+    /** All individual cells covered by the complete rows and columns. */
+    fun toCellSet(gridSize: Int): Set<CellOffset> = buildSet {
+        for (r in rows) {
+            for (c in 0 until gridSize) add(CellOffset(r, c))
+        }
+        for (c in cols) {
+            for (r in 0 until gridSize) add(CellOffset(r, c))
+        }
+    }
 }
 
 /** Result of clearing lines: updated grid + points scored. */

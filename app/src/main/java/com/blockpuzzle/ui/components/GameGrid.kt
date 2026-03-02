@@ -15,6 +15,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.tooling.preview.Preview
 import com.blockpuzzle.model.BlockColor
@@ -47,8 +48,8 @@ import com.blockpuzzle.ui.theme.toComposeColor
 @Composable
 fun GameGrid(
     grid: List<List<Cell>>,
-    clearingCells: Set<Pair<Int, Int>> = emptySet(),
-    highlightCells: Set<Pair<Int, Int>> = emptySet(),
+    clearingCells: Set<CellOffset> = emptySet(),
+    highlightCells: Set<CellOffset> = emptySet(),
     ghostShape: Shape? = null,
     ghostRow: Int = -1,
     ghostCol: Int = -1,
@@ -99,7 +100,7 @@ fun GameGrid(
                 val x = padding + col * cellSize
                 val y = padding + row * cellSize
                 val cell = grid[row][col]
-                val isClearing = (row to col) in clearingCells
+                val isClearing = CellOffset(row, col) in clearingCells
 
                 if (isClearing && cell.filled) {
                     // Clearing animation: flash white then fade out
@@ -116,10 +117,10 @@ fun GameGrid(
                         drawFilledCell(x, y, cellSize, Color.White.copy(alpha = alpha))
                     }
                 } else if (cell.filled) {
-                    val isHighlighted = (row to col) in highlightCells
+                    val isHighlighted = CellOffset(row, col) in highlightCells
                     val color = if (isHighlighted) Color.White else cell.color.toComposeColor()
                     drawFilledCell(x, y, cellSize, color)
-                } else if ((row to col) in highlightCells) {
+                } else if (CellOffset(row, col) in highlightCells) {
                     // Empty cell in a would-clear row/col — draw white to complete the line
                     drawFilledCell(x, y, cellSize, Color.White)
                 } else {
@@ -163,16 +164,6 @@ fun GameGrid(
     }
 }
 
-/** Linearly interpolate between two colors. */
-private fun lerp(start: Color, end: Color, fraction: Float): Color {
-    val f = fraction.coerceIn(0f, 1f)
-    return Color(
-        red = start.red + (end.red - start.red) * f,
-        green = start.green + (end.green - start.green) * f,
-        blue = start.blue + (end.blue - start.blue) * f,
-        alpha = start.alpha + (end.alpha - start.alpha) * f
-    )
-}
 
 private fun DrawScope.drawEmptyCell(x: Float, y: Float, cellSize: Float) {
     val inset = cellSize * 0.08f

@@ -18,7 +18,7 @@ class SettingsRepository(context: Context) {
 
     val paletteFlow: Flow<ColorPalette> = dataStore.data.map { prefs ->
         val name = prefs[KEY_PALETTE] ?: ColorPalette.JEWEL.name
-        try { ColorPalette.valueOf(name) } catch (_: Exception) { ColorPalette.JEWEL }
+        try { ColorPalette.valueOf(name) } catch (_: IllegalArgumentException) { ColorPalette.JEWEL }
     }
 
     suspend fun saveHapticEnabled(enabled: Boolean) {

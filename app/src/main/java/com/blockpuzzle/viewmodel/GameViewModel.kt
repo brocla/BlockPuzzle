@@ -8,6 +8,7 @@ import com.blockpuzzle.data.HighScoreRepository
 import com.blockpuzzle.logic.GameEngine
 import com.blockpuzzle.model.GameState
 import com.blockpuzzle.model.GameState.Companion.GRID_SIZE
+import com.blockpuzzle.model.CellOffset
 import com.blockpuzzle.model.Shape
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -49,7 +50,7 @@ data class DragState(
     val ghostCol: Int = -1,
     val ghostValid: Boolean = false,
     /** Cells in rows/columns that would be cleared if the shape is dropped here. */
-    val highlightCells: Set<Pair<Int, Int>> = emptySet(),
+    val highlightCells: Set<CellOffset> = emptySet(),
     /** True while the drop shrink/fade animation is playing. */
     val isDropAnimating: Boolean = false
 )
@@ -180,16 +181,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         val highlight = if (valid) {
             val simGrid = GameEngine.placeShape(grid, shape, adjRow, adjCol)
             val lines = GameEngine.findCompleteLines(simGrid)
-            if (!lines.isEmpty()) {
-                val cells = mutableSetOf<Pair<Int, Int>>()
-                for (r in lines.rows) {
-                    for (c in 0 until GRID_SIZE) cells.add(r to c)
-                }
-                for (c in lines.cols) {
-                    for (r in 0 until GRID_SIZE) cells.add(r to c)
-                }
-                cells
-            } else emptySet()
+            lines.toCellSet(GRID_SIZE)
         } else emptySet()
 
         _dragState.value = drag.copy(
@@ -251,17 +243,11 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
         val lines = GameEngine.findCompleteLines(newGrid)
 
-        if (!lines.isEmpty()) {
-            val clearing = mutableSetOf<Pair<Int, Int>>()
-            for (r in lines.rows) {
-                for (c in 0 until GRID_SIZE) clearing.add(r to c)
-            }
-            for (c in lines.cols) {
-                for (r in 0 until GRID_SIZE) clearing.add(r to c)
-            }
+        if (lines.isNotEmpty()) {
+            val clearing = lines.toCellSet(GRID_SIZE)
 
-            val clearCenterRow = clearing.map { it.first }.average().toFloat()
-            val clearCenterCol = clearing.map { it.second }.average().toFloat()
+            val clearCenterRow = clearing.map { it.row }.average().toFloat()
+            val clearCenterCol = clearing.map { it.col }.average().toFloat()
 
             if (hapticEnabled) _hapticEvents.tryEmit(HapticEvent.PLACE)
 
