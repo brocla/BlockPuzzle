@@ -1,6 +1,7 @@
 # Block Puzzle
 
 A block puzzle game for Android built with Kotlin and Jetpack Compose.
+There are no ads, no data collection, no in-app purchases. Runs without an internet connection.
 
 ## Features
 
