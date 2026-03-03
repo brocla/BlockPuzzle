@@ -33,6 +33,12 @@ import com.blockpuzzle.ui.theme.GhostValid
 import com.blockpuzzle.ui.theme.GridLine
 import com.blockpuzzle.ui.theme.toComposeColor
 
+// Corner-radius fractions (relative to cell size) used by cell drawing helpers
+private const val CORNER_BOARD = 0.20f
+private const val CORNER_LARGE = 0.15f
+private const val CORNER_MEDIUM = 0.12f
+private const val CORNER_SMALL = 0.10f
+
 /**
  * The 8x8 game grid drawn with Canvas for full control over the wooden look.
  *
@@ -91,7 +97,7 @@ fun GameGrid(
             color = BoardMedium,
             topLeft = Offset(padding, padding),
             size = Size(boardSize, boardSize),
-            cornerRadius = CornerRadius(cellSize * 0.2f)
+            cornerRadius = CornerRadius(cellSize * CORNER_BOARD)
         )
 
         // Draw cells
@@ -172,50 +178,52 @@ private fun DrawScope.drawEmptyCell(x: Float, y: Float, cellSize: Float) {
         color = CellInset,
         topLeft = Offset(x + inset, y + inset),
         size = Size(cellSize - inset * 2, cellSize - inset * 2),
-        cornerRadius = CornerRadius(cellSize * 0.12f)
+        cornerRadius = CornerRadius(cellSize * CORNER_MEDIUM)
     )
     // Lighter fill
     drawRoundRect(
         color = BoardLight,
         topLeft = Offset(x + inset * 1.5f, y + inset * 1.5f),
         size = Size(cellSize - inset * 3, cellSize - inset * 3),
-        cornerRadius = CornerRadius(cellSize * 0.1f)
+        cornerRadius = CornerRadius(cellSize * CORNER_SMALL)
     )
 }
 
-private fun DrawScope.drawFilledCell(x: Float, y: Float, cellSize: Float, color: Color) {
-    val inset = cellSize * 0.06f
+internal fun DrawScope.drawFilledCell(
+    x: Float, y: Float, cellSize: Float, color: Color, insetFraction: Float = 0.06f
+) {
+    val inset = cellSize * insetFraction
     // Block shadow (slightly darker, tight behind the block)
     drawRoundRect(
         color = color.copy(alpha = color.alpha * 0.5f),
         topLeft = Offset(x + inset, y + inset),
         size = Size(cellSize - inset * 2, cellSize - inset * 2),
-        cornerRadius = CornerRadius(cellSize * 0.15f)
+        cornerRadius = CornerRadius(cellSize * CORNER_LARGE)
     )
     // Block face
     drawRoundRect(
         color = color,
         topLeft = Offset(x + inset * 1.5f, y + inset * 1.5f),
         size = Size(cellSize - inset * 3, cellSize - inset * 3),
-        cornerRadius = CornerRadius(cellSize * 0.12f)
+        cornerRadius = CornerRadius(cellSize * CORNER_MEDIUM)
     )
     // Highlight (top-left light reflection)
     drawRoundRect(
         color = Color.White.copy(alpha = color.alpha * 0.15f),
         topLeft = Offset(x + inset * 2f, y + inset * 2f),
         size = Size(cellSize * 0.4f, cellSize * 0.25f),
-        cornerRadius = CornerRadius(cellSize * 0.1f)
+        cornerRadius = CornerRadius(cellSize * CORNER_SMALL)
     )
 }
 
 private fun DrawScope.drawGhostCell(x: Float, y: Float, cellSize: Float, color: Color) {
     val inset = cellSize * 0.08f
-    val strokeWidth = cellSize * 0.12f
+    val strokeWidth = cellSize * CORNER_MEDIUM
     drawRoundRect(
         color = color,
         topLeft = Offset(x + inset, y + inset),
         size = Size(cellSize - inset * 2, cellSize - inset * 2),
-        cornerRadius = CornerRadius(cellSize * 0.12f),
+        cornerRadius = CornerRadius(cellSize * CORNER_MEDIUM),
         style = Stroke(width = strokeWidth)
     )
 }

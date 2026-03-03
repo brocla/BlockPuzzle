@@ -4,11 +4,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -58,35 +53,11 @@ fun ShapePreview(
         for (cell in shape.cells) {
             val x = offsetX + cell.col * cellPx
             val y = offsetY + cell.row * cellPx
-            drawPreviewCell(x, y, cellPx, color)
+            drawFilledCell(x, y, cellPx, color, insetFraction = 0.08f)
         }
     }
 }
 
-private fun DrawScope.drawPreviewCell(x: Float, y: Float, cellPx: Float, color: Color) {
-    val inset = cellPx * 0.08f
-    // Shadow — scale alpha instead of overwriting so dimmed shapes stay dim
-    drawRoundRect(
-        color = color.copy(alpha = color.alpha * 0.5f),
-        topLeft = Offset(x + inset, y + inset),
-        size = Size(cellPx - inset * 2, cellPx - inset * 2),
-        cornerRadius = CornerRadius(cellPx * 0.15f)
-    )
-    // Face
-    drawRoundRect(
-        color = color,
-        topLeft = Offset(x + inset * 1.5f, y + inset * 1.5f),
-        size = Size(cellPx - inset * 3, cellPx - inset * 3),
-        cornerRadius = CornerRadius(cellPx * 0.12f)
-    )
-    // Highlight — scale alpha to respect dimming
-    drawRoundRect(
-        color = Color.White.copy(alpha = color.alpha * 0.15f),
-        topLeft = Offset(x + inset * 2f, y + inset * 2f),
-        size = Size(cellPx * 0.4f, cellPx * 0.25f),
-        cornerRadius = CornerRadius(cellPx * 0.1f)
-    )
-}
 
 @Preview(showBackground = true, backgroundColor = 0xFF3E2723)
 @Composable

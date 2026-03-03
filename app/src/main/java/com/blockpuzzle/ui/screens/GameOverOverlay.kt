@@ -63,34 +63,20 @@ fun GameOverOverlay(
     val highScorePulse = remember { Animatable(1f) }
 
     LaunchedEffect(Unit) {
-        launch {
-            scrimAlpha.animateTo(
-                targetValue = 0.7f,
-                animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
-            )
-        }
+        suspend fun Animatable<Float, *>.slideTo(
+            target: Float, duration: Int = 400
+        ) = animateTo(target, tween(duration, easing = FastOutSlowInEasing))
+
+        launch { scrimAlpha.slideTo(0.7f) }
         launch {
             delay(100)
-            launch {
-                cardAlpha.animateTo(
-                    targetValue = 1f,
-                    animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
-                )
-            }
-            launch {
-                cardOffsetY.animateTo(
-                    targetValue = 0f,
-                    animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
-                )
-            }
+            launch { cardAlpha.slideTo(1f) }
+            launch { cardOffsetY.slideTo(0f) }
         }
         // Score count-up starts after the card has slid in
         launch {
             delay(500)
-            scoreProgress.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing)
-            )
+            scoreProgress.slideTo(1f, duration = 1000)
             // After count-up finishes, start high score pulse
             if (isNewHighScore) {
                 highScorePulse.animateTo(
