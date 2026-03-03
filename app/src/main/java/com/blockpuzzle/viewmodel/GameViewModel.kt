@@ -173,6 +173,12 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         val adjRow = kotlin.math.round(centerRow - shape.height / 2f).toInt()
         val adjCol = kotlin.math.round(centerCol - shape.width / 2f).toInt()
 
+        // Ghost cell unchanged — update only the finger position (cheap)
+        if (adjRow == drag.ghostRow && adjCol == drag.ghostCol) {
+            _dragState.value = drag.copy(fingerRootOffset = fingerInRoot)
+            return
+        }
+
         val grid = _gameState.value.grid
         val valid = adjRow >= 0 && adjCol >= 0 &&
             GameEngine.canPlace(grid, shape, adjRow, adjCol)

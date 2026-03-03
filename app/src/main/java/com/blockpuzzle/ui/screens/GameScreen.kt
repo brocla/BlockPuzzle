@@ -129,6 +129,7 @@ fun GameScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val density = LocalDensity.current
+                val liftBasePx = with(density) { 96.dp.toPx() }
                 gameState.currentShapes.forEachIndexed { index, shape ->
                     val canFit = shape != null && GameEngine.canFitAnywhere(gameState.grid, shape)
                     DraggableShapePreview(
@@ -137,13 +138,10 @@ fun GameScreen(
                         onDragStart = { s -> viewModel.onDragStart(index, s) },
                         onDrag = { rootOffset ->
                             val gridRelative = rootOffset - gridPositionInRoot
-                            // The floating shape is drawn above the finger:
-                            // its center is at finger.y - shapeHeight/2 - 32dp
-                            // So the offset from finger to floating center is:
                             val s = dragState.shape
                             val floatingCenterYOffset = if (s != null) {
                                 val gridCellPx = viewModel.cellSizePx
-                                val liftPx = with(density) { 96.dp.toPx() } + gridCellPx
+                                val liftPx = liftBasePx + gridCellPx
                                 val floatingHeightPx = s.height * gridCellPx
                                 -floatingHeightPx / 2f - liftPx
                             } else 0f

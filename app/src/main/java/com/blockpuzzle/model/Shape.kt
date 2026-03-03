@@ -9,10 +9,10 @@ data class Shape(
     val color: BlockColor
 ) {
     /** Bounding box width (columns). */
-    val width: Int get() = cells.maxOf { it.col } + 1
+    val width: Int = cells.maxOf { it.col } + 1
 
     /** Bounding box height (rows). */
-    val height: Int get() = cells.maxOf { it.row } + 1
+    val height: Int = cells.maxOf { it.row } + 1
 
     /** Returns a new shape rotated 90° clockwise, preserving color. */
     fun rotateCW(): Shape {
