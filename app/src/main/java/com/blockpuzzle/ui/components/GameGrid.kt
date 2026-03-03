@@ -28,8 +28,6 @@ import com.blockpuzzle.ui.theme.BlockPuzzleTheme
 import com.blockpuzzle.ui.theme.BoardLight
 import com.blockpuzzle.ui.theme.BoardMedium
 import com.blockpuzzle.ui.theme.CellInset
-import com.blockpuzzle.ui.theme.GhostInvalid
-import com.blockpuzzle.ui.theme.GhostValid
 import com.blockpuzzle.ui.theme.GridLine
 import com.blockpuzzle.ui.theme.toComposeColor
 

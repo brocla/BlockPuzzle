@@ -10,10 +10,5 @@
         <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
     </style>
 
-    <style name="Theme.BlockPuzzle.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/dark_walnut</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_block_puzzle</item>
-        <item name="postSplashScreenTheme">@style/Theme.BlockPuzzle</item>
-    </style>
 
 </resources>
