@@ -39,10 +39,8 @@ class MainActivity : ComponentActivity() {
             val palette by settingsRepo.paletteFlow.collectAsState(initial = ColorPalette.JEWEL)
             val scope = rememberCoroutineScope()
 
-            // Apply palette to global state
-            LaunchedEffect(palette) {
-                activePalette = palette
-            }
+            // Sync persisted palette to observable global state
+            activePalette = palette
 
             BlockPuzzleTheme {
                 Scaffold(

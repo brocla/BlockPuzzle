@@ -1,5 +1,8 @@
 package com.blockpuzzle.ui.theme
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import com.blockpuzzle.model.BlockColor
 
@@ -23,7 +26,7 @@ val GhostInvalid = Color(0x44FF1744)    // Red tint for invalid placement
 enum class ColorPalette { JEWEL, VIVID, EARTHY, PASTEL, NEON }
 
 /** Active palette — change this to switch all block colors. */
-var activePalette: ColorPalette = ColorPalette.JEWEL
+var activePalette by mutableStateOf(ColorPalette.JEWEL)
 
 data class PaletteColors(
     val red: Color,

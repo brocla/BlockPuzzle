@@ -227,7 +227,7 @@ internal fun ConfettiEffect() {
         }
 
         // Sort by arrival time so earlier-landing particles get bottom slots
-        val sorted = raw.sortedBy { (-0.1f + 1f) / (it.speed * 1.5f) } // time to reach y=1.0
+        val sorted = raw.sortedByDescending { it.speed }
 
         // Assign column-based landing positions
         val columnCounts = IntArray(numColumns)
