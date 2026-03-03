@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val settingsRepo = remember { SettingsRepository(this@MainActivity) }
+            val settingsRepo = remember { SettingsRepository(applicationContext) }
             val hapticEnabled by settingsRepo.hapticEnabledFlow.collectAsState(initial = false)
             val palette by settingsRepo.paletteFlow.collectAsState(initial = ColorPalette.JEWEL)
             val scope = rememberCoroutineScope()

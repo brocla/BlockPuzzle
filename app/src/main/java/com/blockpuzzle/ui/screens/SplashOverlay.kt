@@ -75,7 +75,7 @@ fun SplashOverlay(onFinished: () -> Unit) {
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "Julie's",
+                text = "Nana's",
                 style = TextStyle(
                     fontSize = 42.sp,
                     fontWeight = FontWeight.Light,
