@@ -1,10 +1,13 @@
 package com.blockpuzzle.model
 
+/** A read-only 2-D grid of cells. */
+typealias Grid = List<List<Cell>>
+
 /**
  * Complete game state — everything needed to render the UI and resume a game.
  */
 data class GameState(
-    val grid: List<List<Cell>> = emptyGrid(),
+    val grid: Grid = emptyGrid(),
     val currentShapes: List<Shape?> = listOf(null, null, null),
     val score: Int = 0,
     val highScore: Int = 0,
@@ -15,7 +18,7 @@ data class GameState(
     companion object {
         const val GRID_SIZE = 8
 
-        fun emptyGrid(): List<List<Cell>> =
+        fun emptyGrid(): Grid =
             List(GRID_SIZE) { List(GRID_SIZE) { Cell() } }
     }
 }

@@ -22,6 +22,7 @@ import com.blockpuzzle.model.BlockColor
 import com.blockpuzzle.model.Cell
 import com.blockpuzzle.model.CellOffset
 import com.blockpuzzle.model.GameState
+import com.blockpuzzle.model.Grid
 import com.blockpuzzle.model.GameState.Companion.GRID_SIZE
 import com.blockpuzzle.model.Shape
 import com.blockpuzzle.ui.theme.BlockPuzzleTheme
@@ -51,7 +52,7 @@ private const val CORNER_SMALL = 0.10f
  */
 @Composable
 fun GameGrid(
-    grid: List<List<Cell>>,
+    grid: Grid,
     clearingCells: Set<CellOffset> = emptySet(),
     highlightCells: Set<CellOffset> = emptySet(),
     ghostShape: Shape? = null,

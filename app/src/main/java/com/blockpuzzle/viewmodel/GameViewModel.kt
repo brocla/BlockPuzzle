@@ -249,7 +249,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
         val lines = GameEngine.findCompleteLines(newGrid)
 
-        if (lines.isNotEmpty()) {
+        if (lines.isNotEmpty) {
             val clearing = lines.toCellSet(GRID_SIZE)
 
             val clearCenterRow = clearing.map { it.row }.average().toFloat()
