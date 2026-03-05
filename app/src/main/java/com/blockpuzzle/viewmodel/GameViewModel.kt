@@ -111,8 +111,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                 _gameState.value = savedGame.copy(highScore = savedHighScore)
                 startingHighScore = savedHighScore
             } else {
+                startingHighScore = savedHighScore
                 _gameState.update {
-                    startingHighScore = savedHighScore
                     GameState(
                         grid = GameState.emptyGrid(),
                         currentShapes = GameEngine.generateShapeTriple(),
@@ -126,10 +126,11 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun startNewGame() {
+        startingHighScore = _gameState.value.highScore
+        midGameConfettiFired = false
+        _showMidGameConfetti.value = false
+
         _gameState.update {
-            startingHighScore = it.highScore
-            midGameConfettiFired = false
-            _showMidGameConfetti.value = false
             GameState(
                 grid = GameState.emptyGrid(),
                 currentShapes = GameEngine.generateShapeTriple(),
