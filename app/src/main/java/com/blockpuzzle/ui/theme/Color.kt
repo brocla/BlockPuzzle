@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import com.blockpuzzle.model.BlockColor
+import com.blockpuzzle.model.ColorPalette
 
 // ── Board & background (dark walnut) ──
 val BoardDark = Color(0xFF3E2723)       // Dark walnut — app background
@@ -22,8 +23,6 @@ val GhostValid = Color(0x4400C853)      // Green tint for valid placement
 val GhostInvalid = Color(0x44FF1744)    // Red tint for invalid placement
 
 // ── Block color palettes ──
-
-enum class ColorPalette { JEWEL, VIVID, EARTHY, PASTEL, NEON }
 
 /** Active palette — change this to switch all block colors. */
 var activePalette by mutableStateOf(ColorPalette.JEWEL)

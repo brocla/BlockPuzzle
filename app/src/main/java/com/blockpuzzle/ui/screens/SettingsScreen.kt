@@ -33,7 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.blockpuzzle.ui.theme.BoardDark
-import com.blockpuzzle.ui.theme.ColorPalette
+import com.blockpuzzle.model.ColorPalette
 import com.blockpuzzle.ui.theme.TextCream
 import com.blockpuzzle.ui.theme.TextGold
 import com.blockpuzzle.ui.theme.paletteOf

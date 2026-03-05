@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.blockpuzzle.data.GameStateRepository
 import com.blockpuzzle.data.HighScoreRepository
 import com.blockpuzzle.logic.GameEngine
 import com.blockpuzzle.model.GameState
@@ -58,6 +59,7 @@ data class DragState(
 class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     private val highScoreRepo = HighScoreRepository(app)
+    private val gameStateRepo = GameStateRepository(app)
 
     private val _gameState = MutableStateFlow(GameState())
     val gameState: StateFlow<GameState> = _gameState.asStateFlow()
@@ -100,14 +102,24 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     var cellSizePx: Float = 0f
 
     init {
-        startNewGame()
-        // Load persisted high score — arrives after startNewGame, so patch startingHighScore too
         viewModelScope.launch {
             val savedHighScore = highScoreRepo.highScoreFlow.first()
-            _gameState.update { it.copy(highScore = savedHighScore) }
-            // startNewGame already ran with highScore=0, so fix up the snapshot
-            if (!midGameConfettiFired) {
+            val savedGame = gameStateRepo.load()
+
+            if (savedGame != null && !savedGame.isGameOver) {
+                _gameState.value = savedGame.copy(highScore = savedHighScore)
                 startingHighScore = savedHighScore
+            } else {
+                _gameState.update {
+                    startingHighScore = savedHighScore
+                    GameState(
+                        grid = GameState.emptyGrid(),
+                        currentShapes = GameEngine.generateShapeTriple(),
+                        score = 0,
+                        highScore = savedHighScore
+                    )
+                }
+                _dragState.value = DragState()
             }
         }
     }
@@ -125,6 +137,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
         _dragState.value = DragState()
+        viewModelScope.launch { gameStateRepo.clear() }
     }
 
     /** Rotate the shape at the given tray index 90° clockwise. */
@@ -135,6 +148,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             newShapes[index] = shape.rotateCW()
             state.copy(currentShapes = newShapes)
         }
+        persistGameState()
     }
 
     /** Called when the player starts dragging a shape from the tray. */
@@ -285,6 +299,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 }
 
+                persistGameState()
+
                 if (hapticEnabled) _hapticEvents.tryEmit(HapticEvent.LINE_CLEAR)
 
                 emitScorePop(clearResult.points, clearCenterRow, clearCenterCol, isBonus = true)
@@ -308,6 +324,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }
 
+            persistGameState()
+
             val shapeCenterRow = drag.ghostRow + shape.height / 2f
             val shapeCenterCol = drag.ghostCol + shape.width / 2f
             emitScorePop(placementPts, shapeCenterRow, shapeCenterCol, isBonus = false)
@@ -321,6 +339,11 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             midGameConfettiFired = true
             _showMidGameConfetti.value = true
         }
+    }
+
+    /** Persist game state to DataStore for resume-on-relaunch. */
+    private fun persistGameState() {
+        viewModelScope.launch { gameStateRepo.save(_gameState.value) }
     }
 
     /** Persist high score to DataStore if it increased. */

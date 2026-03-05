@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.blockpuzzle.ui.theme.ColorPalette
+import com.blockpuzzle.model.ColorPalette
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

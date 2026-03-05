@@ -24,7 +24,7 @@ import com.blockpuzzle.ui.screens.GameScreen
 import com.blockpuzzle.ui.screens.SettingsScreen
 import com.blockpuzzle.ui.screens.SplashOverlay
 import com.blockpuzzle.ui.theme.BlockPuzzleTheme
-import com.blockpuzzle.ui.theme.ColorPalette
+import com.blockpuzzle.model.ColorPalette
 import com.blockpuzzle.ui.theme.activePalette
 import com.blockpuzzle.viewmodel.GameViewModel
 import kotlinx.coroutines.launch

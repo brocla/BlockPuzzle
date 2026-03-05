@@ -77,11 +77,11 @@ fun SplashOverlay(onFinished: () -> Unit) {
             Text(
                 text = "Nana's",
                 style = TextStyle(
-                    fontSize = 42.sp,
-                    fontWeight = FontWeight.Light,
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Serif,
-                    color = Color(0xFFFFD54F),
-                    letterSpacing = 3.sp,
+                    color = Color(0xFFFFD700),
+                    letterSpacing = 2.sp,
                     shadow = Shadow(
                         color = Color(0x88000000),
                         offset = Offset(2f, 3f),
