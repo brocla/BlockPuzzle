@@ -10,6 +10,7 @@ import com.blockpuzzle.logic.GameEngine
 import com.blockpuzzle.model.GameState
 import com.blockpuzzle.model.GameState.Companion.GRID_SIZE
 import com.blockpuzzle.model.CellOffset
+import com.blockpuzzle.model.Grid
 import com.blockpuzzle.model.Shape
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -249,28 +250,22 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     private fun executePlacement(drag: DragState, shape: Shape) {
         val grid = _gameState.value.grid
         val newGrid = GameEngine.placeShape(grid, shape, drag.ghostRow, drag.ghostCol)
-
         val placementPts = GameEngine.placementPoints(shape)
 
         val newShapes = _gameState.value.currentShapes.toMutableList()
         newShapes[drag.shapeIndex] = null
-
         val finalShapes = if (newShapes.all { it == null }) {
             GameEngine.generateShapeTriple()
-        } else {
-            newShapes
-        }
+        } else newShapes
 
         val lines = GameEngine.findCompleteLines(newGrid)
+
+        if (hapticEnabled) _hapticEvents.tryEmit(HapticEvent.PLACE)
 
         if (lines.isNotEmpty) {
             val clearing = lines.toCellSet(GRID_SIZE)
 
-            val clearCenterRow = clearing.map { it.row }.average().toFloat()
-            val clearCenterCol = clearing.map { it.col }.average().toFloat()
-
-            if (hapticEnabled) _hapticEvents.tryEmit(HapticEvent.PLACE)
-
+            // Phase 1: show clearing animation
             _gameState.update {
                 it.copy(
                     grid = newGrid,
@@ -280,57 +275,64 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }
 
+            // Phase 2: after animation, clear lines and finalize
             viewModelScope.launch {
                 delay(CLEAR_ANIMATION_MS)
-
                 val clearResult = GameEngine.clearLines(newGrid, lines)
-                val newScore = _gameState.value.score + clearResult.points
-                val newHighScore = maxOf(newScore, _gameState.value.highScore)
-                persistHighScoreIfNeeded(newHighScore)
-                val gameOver = GameEngine.isGameOver(clearResult.grid, finalShapes)
-
-                _gameState.update {
-                    it.copy(
-                        grid = clearResult.grid,
-                        score = newScore,
-                        highScore = newHighScore,
-                        isGameOver = gameOver,
-                        clearingCells = emptySet()
-                    )
-                }
-
-                persistGameState()
+                val clearCenterRow = clearing.map { it.row }.average().toFloat()
+                val clearCenterCol = clearing.map { it.col }.average().toFloat()
 
                 if (hapticEnabled) _hapticEvents.tryEmit(HapticEvent.LINE_CLEAR)
 
-                emitScorePop(clearResult.points, clearCenterRow, clearCenterCol, isBonus = true)
-                checkMidGameConfetti(newScore)
-            }
-        } else {
-            if (hapticEnabled) _hapticEvents.tryEmit(HapticEvent.PLACE)
-
-            val newScore = _gameState.value.score + placementPts
-            val newHighScore = maxOf(newScore, _gameState.value.highScore)
-            persistHighScoreIfNeeded(newHighScore)
-            val gameOver = GameEngine.isGameOver(newGrid, finalShapes)
-
-            _gameState.update {
-                it.copy(
-                    grid = newGrid,
-                    currentShapes = finalShapes,
-                    score = newScore,
-                    highScore = newHighScore,
-                    isGameOver = gameOver
+                finalizePlacement(
+                    newGrid = clearResult.grid,
+                    finalShapes = finalShapes,
+                    points = clearResult.points,
+                    popCenterRow = clearCenterRow,
+                    popCenterCol = clearCenterCol,
+                    isBonus = true
                 )
             }
-
-            persistGameState()
-
-            val shapeCenterRow = drag.ghostRow + shape.height / 2f
-            val shapeCenterCol = drag.ghostCol + shape.width / 2f
-            emitScorePop(placementPts, shapeCenterRow, shapeCenterCol, isBonus = false)
-            checkMidGameConfetti(newScore)
+        } else {
+            finalizePlacement(
+                newGrid = newGrid,
+                finalShapes = finalShapes,
+                points = placementPts,
+                popCenterRow = drag.ghostRow + shape.height / 2f,
+                popCenterCol = drag.ghostCol + shape.width / 2f,
+                isBonus = false
+            )
         }
+    }
+
+    /** Common finalization: update score, check game over, persist, and emit UI events. */
+    private fun finalizePlacement(
+        newGrid: Grid,
+        finalShapes: List<Shape?>,
+        points: Int,
+        popCenterRow: Float,
+        popCenterCol: Float,
+        isBonus: Boolean
+    ) {
+        val newScore = _gameState.value.score + points
+        val newHighScore = maxOf(newScore, _gameState.value.highScore)
+        persistHighScoreIfNeeded(newHighScore)
+        val gameOver = GameEngine.isGameOver(newGrid, finalShapes)
+
+        _gameState.update {
+            it.copy(
+                grid = newGrid,
+                currentShapes = finalShapes,
+                score = newScore,
+                highScore = newHighScore,
+                isGameOver = gameOver,
+                clearingCells = emptySet()
+            )
+        }
+
+        persistGameState()
+        emitScorePop(points, popCenterRow, popCenterCol, isBonus)
+        checkMidGameConfetti(newScore)
     }
 
     /** Trigger mid-game confetti the first time the score exceeds the starting high score. */
