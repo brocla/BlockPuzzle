@@ -18,7 +18,8 @@ class SettingsRepository(context: Context) {
 
     val paletteFlow: Flow<ColorPalette> = dataStore.data.map { prefs ->
         val name = prefs[KEY_PALETTE] ?: ColorPalette.JEWEL.name
-        try { ColorPalette.valueOf(name) } catch (_: IllegalArgumentException) { ColorPalette.JEWEL }
+        val migrated = if (name == "VIVID") "COOL_MINIMAL" else name
+        try { ColorPalette.valueOf(migrated) } catch (_: IllegalArgumentException) { ColorPalette.JEWEL }
     }
 
     suspend fun saveHapticEnabled(enabled: Boolean) {

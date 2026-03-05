@@ -45,20 +45,20 @@ val JewelPalette = PaletteColors(
     orange = Color(0xFFFB8C00)   // Tangerine
 )
 
-val VividPalette = PaletteColors(
-    red    = Color(0xFFFF5252),  // Coral
-    blue   = Color(0xFF40C4FF),  // Sky
-    green  = Color(0xFF76FF03),  // Lime
-    purple = Color(0xFFD500F9),  // Violet
-    orange = Color(0xFFFFAB40)   // Peach
+val CoolMinimalPalette = PaletteColors(
+    red    = Color(0xFFFF2E63),  // Neon Pink
+    blue   = Color(0xFF08D9D6),  // Aqua Cyan
+    green  = Color(0xFF252A34),  // Deep Space Gray
+    purple = Color(0xFFFCE38A),  // Soft Neon Yellow
+    orange = Color(0xFFFF9F1C)   // Tangerine Orange
 )
 
 val EarthyPalette = PaletteColors(
-    red    = Color(0xFFC62828),  // Brick
-    blue   = Color(0xFF0277BD),  // Ocean
-    green  = Color(0xFF558B2F),  // Moss
-    purple = Color(0xFF6A1B9A),  // Plum
-    orange = Color(0xFFFF8F00)   // Amber
+    red    = Color(0xFFCB997E),  // Clay Brown
+    blue   = Color(0xFFB7B7A4),  // Weathered Stone
+    green  = Color(0xFF6B705C),  // Moss Green
+    purple = Color(0xFFA5A58D),  // Sage
+    orange = Color(0xFFFFE8D6)   // Sand Cream
 )
 
 val PastelPalette = PaletteColors(
@@ -70,19 +70,28 @@ val PastelPalette = PaletteColors(
 )
 
 val NeonPalette = PaletteColors(
-    red    = Color(0xFFFF0066),  // Hot pink
-    blue   = Color(0xFF00E5FF),  // Electric blue
-    green  = Color(0xFF39FF14),  // Neon green
-    purple = Color(0xFFBF00FF),  // Electric purple
-    orange = Color(0xFFFFEA00)   // Neon yellow
+    red    = Color(0xFFFF2E63),  // Neon Pink
+    blue   = Color(0xFF08D9D6),  // Aqua Cyan
+    green  = Color(0xFF252A34),  // Deep Space Gray
+    purple = Color(0xFFFCE38A),  // Soft Neon Yellow
+    orange = Color(0xFFFF9F1C)   // Tangerine Orange
+)
+
+val WoodPalette = PaletteColors(
+    red    = Color(0xFFEED9C4),  // Pale Birch
+    blue   = Color(0xFFD2A679),  // Honey Oak
+    green  = Color(0xFFA97458),  // Chestnut Brown
+    purple = Color(0xFF6B4F3A),  // Walnut Grain
+    orange = Color(0xFF3E2C1C)   // Burnt Umber
 )
 
 fun paletteOf(palette: ColorPalette): PaletteColors = when (palette) {
     ColorPalette.JEWEL -> JewelPalette
-    ColorPalette.VIVID -> VividPalette
+    ColorPalette.COOL_MINIMAL -> CoolMinimalPalette
     ColorPalette.EARTHY -> EarthyPalette
     ColorPalette.PASTEL -> PastelPalette
     ColorPalette.NEON -> NeonPalette
+    ColorPalette.WOOD -> WoodPalette
 }
 
 private fun currentPalette(): PaletteColors = paletteOf(activePalette)
