@@ -137,7 +137,7 @@ private fun PaletteRow(
     val colors = paletteOf(palette).toList()
     val label = when (palette) {
         ColorPalette.JEWEL -> "Jewel"
-        ColorPalette.COOL_MINIMAL -> "Cool Minimal"
+        ColorPalette.COOL_MINIMAL -> "Cool Min"
         ColorPalette.EARTHY -> "Earthy"
         ColorPalette.PASTEL -> "Pastel"
         ColorPalette.NEON -> "Neon"
