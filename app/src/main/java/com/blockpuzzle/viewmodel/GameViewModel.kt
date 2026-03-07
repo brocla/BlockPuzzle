@@ -115,7 +115,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                 _gameState.update {
                     GameState(
                         grid = GameState.emptyGrid(),
-                        currentShapes = GameEngine.generateShapeTriple(),
+                        currentShapes = GameEngine.generateShapeTriple(GameState.emptyGrid()),
                         score = 0,
                         highScore = savedHighScore
                     )
@@ -133,7 +133,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         _gameState.update {
             GameState(
                 grid = GameState.emptyGrid(),
-                currentShapes = GameEngine.generateShapeTriple(),
+                currentShapes = GameEngine.generateShapeTriple(GameState.emptyGrid()),
                 score = 0,
                 highScore = it.highScore
             )
@@ -256,7 +256,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         val newShapes = _gameState.value.currentShapes.toMutableList()
         newShapes[drag.shapeIndex] = null
         val finalShapes = if (newShapes.all { it == null }) {
-            GameEngine.generateShapeTriple()
+            GameEngine.generateShapeTriple(newGrid)
         } else newShapes
 
         val lines = GameEngine.findCompleteLines(newGrid)
