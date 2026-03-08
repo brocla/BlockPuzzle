@@ -1,3 +1,3 @@
 package com.blockpuzzle.model
 
-enum class ColorPalette { JEWEL, COOL_MINIMAL, EARTHY, PASTEL, NEON, WOOD }
+enum class ColorPalette { JEWEL, EARTHY, PASTEL, NEON, WOOD }

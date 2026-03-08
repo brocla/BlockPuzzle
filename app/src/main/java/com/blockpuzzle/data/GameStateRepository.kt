@@ -22,6 +22,9 @@ class GameStateRepository(context: Context) {
             put("isGameOver", state.isGameOver)
             put("grid", serializeGrid(state.grid))
             put("shapes", serializeShapes(state.currentShapes))
+            if (state.holdShape != null) {
+                put("holdShape", serializeShape(state.holdShape))
+            }
         }
         dataStore.edit { prefs ->
             prefs[KEY_SAVED_GAME] = json.toString()
@@ -37,7 +40,8 @@ class GameStateRepository(context: Context) {
                 grid = deserializeGrid(json.getJSONArray("grid")),
                 currentShapes = deserializeShapes(json.getJSONArray("shapes")),
                 score = json.getInt("score"),
-                isGameOver = json.getBoolean("isGameOver")
+                isGameOver = json.getBoolean("isGameOver"),
+                holdShape = json.optJSONObject("holdShape")?.let { deserializeShape(it) }
             )
         } catch (_: Exception) {
             null
@@ -78,43 +82,41 @@ class GameStateRepository(context: Context) {
         }
     }
 
+    private fun serializeShape(shape: Shape): JSONObject = JSONObject().apply {
+        put("color", shape.color.name)
+        put("cells", JSONArray().apply {
+            for (cell in shape.cells) {
+                put(JSONObject().apply {
+                    put("r", cell.row)
+                    put("c", cell.col)
+                })
+            }
+        })
+    }
+
+    private fun deserializeShape(obj: JSONObject): Shape {
+        val cells = obj.getJSONArray("cells")
+        return Shape(
+            cells = List(cells.length()) { c ->
+                val cell = cells.getJSONObject(c)
+                CellOffset(row = cell.getInt("r"), col = cell.getInt("c"))
+            },
+            color = BlockColor.valueOf(obj.getString("color"))
+        )
+    }
+
     private fun serializeShapes(shapes: List<Shape?>): JSONArray {
         val arr = JSONArray()
         for (shape in shapes) {
-            if (shape == null) {
-                arr.put(JSONObject.NULL)
-            } else {
-                arr.put(JSONObject().apply {
-                    put("color", shape.color.name)
-                    put("cells", JSONArray().apply {
-                        for (cell in shape.cells) {
-                            put(JSONObject().apply {
-                                put("r", cell.row)
-                                put("c", cell.col)
-                            })
-                        }
-                    })
-                })
-            }
+            if (shape == null) arr.put(JSONObject.NULL)
+            else arr.put(serializeShape(shape))
         }
         return arr
     }
 
     private fun deserializeShapes(arr: JSONArray): List<Shape?> {
         return List(arr.length()) { i ->
-            if (arr.isNull(i)) {
-                null
-            } else {
-                val obj = arr.getJSONObject(i)
-                val cells = obj.getJSONArray("cells")
-                Shape(
-                    cells = List(cells.length()) { c ->
-                        val cell = cells.getJSONObject(c)
-                        CellOffset(row = cell.getInt("r"), col = cell.getInt("c"))
-                    },
-                    color = BlockColor.valueOf(obj.getString("color"))
-                )
-            }
+            if (arr.isNull(i)) null else deserializeShape(arr.getJSONObject(i))
         }
     }
 

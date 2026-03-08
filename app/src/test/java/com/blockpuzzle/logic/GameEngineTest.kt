@@ -380,7 +380,7 @@ class GameEngineTest {
 
     @Test
     fun `generateShapeTriple - returns 3 shapes`() {
-        val shapes = GameEngine.generateShapeTriple(empty, Random(42))
+        val shapes = GameEngine.generateShapeTriple(empty, random = Random(42))
         assertEquals(3, shapes.size)
         shapes.forEach { shape ->
             assertTrue(shape.cells.isNotEmpty())
@@ -390,8 +390,8 @@ class GameEngineTest {
 
     @Test
     fun `generateShapeTriple - deterministic with seeded random`() {
-        val a = GameEngine.generateShapeTriple(empty, Random(123))
-        val b = GameEngine.generateShapeTriple(empty, Random(123))
+        val a = GameEngine.generateShapeTriple(empty, random = Random(123))
+        val b = GameEngine.generateShapeTriple(empty, random = Random(123))
         assertEquals(a, b)
     }
 
@@ -399,7 +399,7 @@ class GameEngineTest {
     fun `generateShapeTriple - never assigns NONE color`() {
         // Test across multiple seeds to increase confidence
         for (seed in 0..99) {
-            val shapes = GameEngine.generateShapeTriple(empty, Random(seed))
+            val shapes = GameEngine.generateShapeTriple(empty, random = Random(seed))
             shapes.forEach { shape ->
                 assertTrue(
                     "Shape should not have NONE color (seed=$seed)",
@@ -418,7 +418,7 @@ class GameEngineTest {
             }
         }
         for (seed in 0..49) {
-            val shapes = GameEngine.generateShapeTriple(crowded, Random(seed))
+            val shapes = GameEngine.generateShapeTriple(crowded, random = Random(seed))
             shapes.forEach { shape ->
                 assertTrue(
                     "Shape should be placeable on crowded grid (seed=$seed)",

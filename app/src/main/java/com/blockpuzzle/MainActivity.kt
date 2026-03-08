@@ -36,6 +36,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settingsRepo = remember { SettingsRepository(applicationContext) }
             val hapticEnabled by settingsRepo.hapticEnabledFlow.collectAsState(initial = false)
+            val easyShapes by settingsRepo.easyShapesFlow.collectAsState(initial = false)
             val palette by settingsRepo.paletteFlow.collectAsState(initial = ColorPalette.JEWEL)
             val scope = rememberCoroutineScope()
 
@@ -49,9 +50,12 @@ class MainActivity : ComponentActivity() {
                 ) { innerPadding ->
                     val viewModel: GameViewModel = viewModel()
 
-                    // Sync haptic setting to ViewModel
+                    // Sync settings to ViewModel
                     LaunchedEffect(hapticEnabled) {
                         viewModel.hapticEnabled = hapticEnabled
+                    }
+                    LaunchedEffect(easyShapes) {
+                        viewModel.easyShapes = easyShapes
                     }
 
                     var showSettings by rememberSaveable { mutableStateOf(false) }
@@ -66,9 +70,13 @@ class MainActivity : ComponentActivity() {
                         if (showSettings) {
                             SettingsScreen(
                                 hapticEnabled = hapticEnabled,
+                                easyShapes = easyShapes,
                                 selectedPalette = palette,
                                 onHapticToggle = { enabled ->
                                     scope.launch { settingsRepo.saveHapticEnabled(enabled) }
+                                },
+                                onEasyShapesToggle = { enabled ->
+                                    scope.launch { settingsRepo.saveEasyShapes(enabled) }
                                 },
                                 onPaletteSelect = { selected ->
                                     activePalette = selected

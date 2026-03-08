@@ -41,8 +41,10 @@ import com.blockpuzzle.ui.theme.paletteOf
 @Composable
 fun SettingsScreen(
     hapticEnabled: Boolean,
+    easyShapes: Boolean,
     selectedPalette: ColorPalette,
     onHapticToggle: (Boolean) -> Unit,
+    onEasyShapesToggle: (Boolean) -> Unit,
     onPaletteSelect: (ColorPalette) -> Unit,
     onBack: () -> Unit
 ) {
@@ -104,6 +106,33 @@ fun SettingsScreen(
                 )
             }
 
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Fair shapes toggle
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Fair Shapes",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextCream
+                )
+                Switch(
+                    checked = easyShapes,
+                    onCheckedChange = onEasyShapesToggle,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = TextGold,
+                        checkedTrackColor = TextGold.copy(alpha = 0.4f),
+                        uncheckedThumbColor = TextCream.copy(alpha = 0.6f),
+                        uncheckedTrackColor = TextCream.copy(alpha = 0.2f)
+                    )
+                )
+            }
+
             Spacer(modifier = Modifier.height(32.dp))
 
             // Palette section
@@ -137,7 +166,6 @@ private fun PaletteRow(
     val colors = paletteOf(palette).toList()
     val label = when (palette) {
         ColorPalette.JEWEL -> "Jewel"
-        ColorPalette.COOL_MINIMAL -> "Cool Min"
         ColorPalette.EARTHY -> "Earthy"
         ColorPalette.PASTEL -> "Pastel"
         ColorPalette.NEON -> "Neon"

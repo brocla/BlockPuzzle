@@ -2,6 +2,7 @@ package com.blockpuzzle.viewmodel
 
 import android.app.Application
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.blockpuzzle.data.GameStateRepository
@@ -39,12 +40,17 @@ data class ScorePop(
     val id: Long
 )
 
+/** Where a drag originated — tray slot or hold box. */
+enum class DragSource { TRAY, HOLD }
+
 /**
  * Drag state tracked separately from game state for performance —
  * drag offsets change every frame, game state changes only on drop.
  */
 data class DragState(
     val shapeIndex: Int = -1,
+    /** Where the drag started. [shapeIndex] is only meaningful when [source] is [DragSource.TRAY]. */
+    val source: DragSource = DragSource.TRAY,
     val shape: Shape? = null,
     /** Finger position in root (window) coordinates — used to position the floating shape. */
     val fingerRootOffset: Offset = Offset.Zero,
@@ -102,6 +108,12 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     var gridScreenOffset: Offset = Offset.Zero
     var cellSizePx: Float = 0f
 
+    /** Screen rect of the hold box — set by the HoldBox composable for drop hit-testing. */
+    var holdBoxScreenRect: Rect = Rect.Zero
+
+    /** Base lift in px (96dp converted) — set by GameScreen for hold-box hit-testing. */
+    var liftBasePx: Float = 0f
+
     init {
         viewModelScope.launch {
             val savedHighScore = highScoreRepo.highScoreFlow.first()
@@ -115,7 +127,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                 _gameState.update {
                     GameState(
                         grid = GameState.emptyGrid(),
-                        currentShapes = GameEngine.generateShapeTriple(GameState.emptyGrid()),
+                        currentShapes = GameEngine.generateShapeTriple(GameState.emptyGrid(), ensureFit = easyShapes),
                         score = 0,
                         highScore = savedHighScore
                     )
@@ -133,7 +145,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         _gameState.update {
             GameState(
                 grid = GameState.emptyGrid(),
-                currentShapes = GameEngine.generateShapeTriple(GameState.emptyGrid()),
+                currentShapes = GameEngine.generateShapeTriple(GameState.emptyGrid(), ensureFit = easyShapes),
                 score = 0,
                 highScore = it.highScore
             )
@@ -151,6 +163,21 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             state.copy(currentShapes = newShapes)
         }
         persistGameState()
+    }
+
+    /** Rotate the shape in the hold box 90° clockwise. */
+    fun rotateHoldShape() {
+        _gameState.update { state ->
+            val shape = state.holdShape ?: return@update state
+            state.copy(holdShape = shape.rotateCW())
+        }
+        persistGameState()
+    }
+
+    /** Called when the player starts dragging a shape from the hold box. */
+    fun onHoldDragStart(shape: Shape) {
+        if (_gameState.value.clearingCells.isNotEmpty()) return
+        _dragState.value = DragState(source = DragSource.HOLD, shape = shape)
     }
 
     /** Called when the player starts dragging a shape from the tray. */
@@ -226,6 +253,28 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
 
+        // Check if a tray shape was dropped onto an empty hold box.
+        // Hit-test the floating shape's visual bounding box (not the finger) since
+        // the shape is lifted well above the finger and the hold box is at screen bottom.
+        val shape = drag.shape!!
+        val liftPx = liftBasePx + cellSizePx
+        val shapeTop = drag.fingerRootOffset.y - shape.height * cellSizePx - liftPx
+        val shapeBottom = drag.fingerRootOffset.y - liftPx
+        val halfW = shape.width * cellSizePx / 2f
+        val shapeRect = Rect(
+            left = drag.fingerRootOffset.x - halfW,
+            top = shapeTop,
+            right = drag.fingerRootOffset.x + halfW,
+            bottom = shapeBottom
+        )
+        if (drag.source == DragSource.TRAY &&
+            _gameState.value.holdShape == null &&
+            shapeRect.overlaps(holdBoxScreenRect)
+        ) {
+            executeHoldDrop(drag)
+            return
+        }
+
         // On valid placement, trigger drop animation (grid update deferred to onDropAnimationDone);
         // on miss, clear immediately
         if (drag.ghostValid && drag.ghostRow >= 0 && drag.ghostCol >= 0) {
@@ -247,17 +296,44 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         _dragState.value = DragState()
     }
 
+    /** Moves a tray shape into the empty hold box. */
+    private fun executeHoldDrop(drag: DragState) {
+        val droppedShape = drag.shape ?: return
+        _gameState.update { state ->
+            val newShapes = state.currentShapes.toMutableList()
+            newShapes[drag.shapeIndex] = null
+            val finalShapes = if (newShapes.all { it == null }) {
+                GameEngine.generateShapeTriple(state.grid, ensureFit = easyShapes)
+            } else newShapes
+            state.copy(holdShape = droppedShape, currentShapes = finalShapes)
+        }
+        persistGameState()
+        _dragState.value = DragState()
+    }
+
     /** Applies a valid shape placement to the game state (grid, score, line clears). */
     private fun executePlacement(drag: DragState, shape: Shape) {
         val grid = _gameState.value.grid
         val newGrid = GameEngine.placeShape(grid, shape, drag.ghostRow, drag.ghostCol)
         val placementPts = GameEngine.placementPoints(shape)
 
-        val newShapes = _gameState.value.currentShapes.toMutableList()
-        newShapes[drag.shapeIndex] = null
-        val finalShapes = if (newShapes.all { it == null }) {
-            GameEngine.generateShapeTriple(newGrid)
-        } else newShapes
+        val currentState = _gameState.value
+        val finalShapes: List<Shape?>
+        val finalHoldShape: Shape?
+
+        if (drag.source == DragSource.HOLD) {
+            // Hold shape was played — clear hold, tray unchanged
+            finalShapes = currentState.currentShapes
+            finalHoldShape = null
+        } else {
+            // Tray shape was played — null the slot, repopulate if needed
+            val newShapes = currentState.currentShapes.toMutableList()
+            newShapes[drag.shapeIndex] = null
+            finalShapes = if (newShapes.all { it == null }) {
+                GameEngine.generateShapeTriple(newGrid, ensureFit = easyShapes)
+            } else newShapes
+            finalHoldShape = currentState.holdShape
+        }
 
         val lines = GameEngine.findCompleteLines(newGrid)
 
@@ -271,6 +347,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                 it.copy(
                     grid = newGrid,
                     currentShapes = finalShapes,
+                    holdShape = finalHoldShape,
                     score = it.score + placementPts,
                     clearingCells = clearing
                 )
@@ -288,6 +365,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                 finalizePlacement(
                     newGrid = clearResult.grid,
                     finalShapes = finalShapes,
+                    finalHoldShape = finalHoldShape,
                     points = clearResult.points,
                     popCenterRow = clearCenterRow,
                     popCenterCol = clearCenterCol,
@@ -298,6 +376,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             finalizePlacement(
                 newGrid = newGrid,
                 finalShapes = finalShapes,
+                finalHoldShape = finalHoldShape,
                 points = placementPts,
                 popCenterRow = drag.ghostRow + shape.height / 2f,
                 popCenterCol = drag.ghostCol + shape.width / 2f,
@@ -310,6 +389,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     private fun finalizePlacement(
         newGrid: Grid,
         finalShapes: List<Shape?>,
+        finalHoldShape: Shape?,
         points: Int,
         popCenterRow: Float,
         popCenterCol: Float,
@@ -318,12 +398,14 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         val newScore = _gameState.value.score + points
         val newHighScore = maxOf(newScore, _gameState.value.highScore)
         persistHighScoreIfNeeded(newHighScore)
-        val gameOver = GameEngine.isGameOver(newGrid, finalShapes)
+        val allRemaining = finalShapes + listOfNotNull(finalHoldShape)
+        val gameOver = GameEngine.isGameOver(newGrid, allRemaining)
 
         _gameState.update {
             it.copy(
                 grid = newGrid,
                 currentShapes = finalShapes,
+                holdShape = finalHoldShape,
                 score = newScore,
                 highScore = newHighScore,
                 isGameOver = gameOver,
@@ -362,6 +444,9 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Set by MainActivity from SettingsRepository. */
     var hapticEnabled: Boolean = false
+
+    /** When true, generated shapes are guaranteed placeable on the current grid. */
+    var easyShapes: Boolean = false
 
     /** Cancel drag without placing. */
     fun onDragCancel() {

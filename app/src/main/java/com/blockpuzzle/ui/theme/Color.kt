@@ -45,14 +45,6 @@ val JewelPalette = PaletteColors(
     orange = Color(0xFFFB8C00)   // Tangerine
 )
 
-val CoolMinimalPalette = PaletteColors(
-    red    = Color(0xFFFF2E63),  // Neon Pink
-    blue   = Color(0xFF08D9D6),  // Aqua Cyan
-    green  = Color(0xFF252A34),  // Deep Space Gray
-    purple = Color(0xFFFCE38A),  // Soft Neon Yellow
-    orange = Color(0xFFFF9F1C)   // Tangerine Orange
-)
-
 val EarthyPalette = PaletteColors(
     red    = Color(0xFFCB997E),  // Clay Brown
     blue   = Color(0xFFB7B7A4),  // Weathered Stone
@@ -72,22 +64,21 @@ val PastelPalette = PaletteColors(
 val NeonPalette = PaletteColors(
     red    = Color(0xFFFF2E63),  // Neon Pink
     blue   = Color(0xFF08D9D6),  // Aqua Cyan
-    green  = Color(0xFF252A34),  // Deep Space Gray
+    green  = Color(0xFF39FF14),  // Screaming Green
     purple = Color(0xFFFCE38A),  // Soft Neon Yellow
     orange = Color(0xFFFF9F1C)   // Tangerine Orange
 )
 
 val WoodPalette = PaletteColors(
-    red    = Color(0xFFEED9C4),  // Pale Birch
-    blue   = Color(0xFFD2A679),  // Honey Oak
-    green  = Color(0xFFA97458),  // Chestnut Brown
-    purple = Color(0xFF6B4F3A),  // Walnut Grain
-    orange = Color(0xFF3E2C1C)   // Burnt Umber
+    red    = Color(0xFFEED9C4),  // Pale Birch (lightest)
+    blue   = Color(0xFFD4B896),  // Light Oak
+    green  = Color(0xFFBA9768),  // Golden Maple
+    purple = Color(0xFF92734E),  // Tawny Cedar
+    orange = Color(0xFF6B4F3A)   // Walnut Grain (darkest)
 )
 
 fun paletteOf(palette: ColorPalette): PaletteColors = when (palette) {
     ColorPalette.JEWEL -> JewelPalette
-    ColorPalette.COOL_MINIMAL -> CoolMinimalPalette
     ColorPalette.EARTHY -> EarthyPalette
     ColorPalette.PASTEL -> PastelPalette
     ColorPalette.NEON -> NeonPalette

@@ -13,7 +13,9 @@ data class GameState(
     val highScore: Int = 0,
     val isGameOver: Boolean = false,
     /** Cells currently playing the clear animation. Non-empty blocks new placements. */
-    val clearingCells: Set<CellOffset> = emptySet()
+    val clearingCells: Set<CellOffset> = emptySet(),
+    /** Shape stashed by the player in the hold box (null = empty). */
+    val holdShape: Shape? = null
 ) {
     companion object {
         const val GRID_SIZE = 8

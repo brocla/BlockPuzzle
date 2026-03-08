@@ -26,6 +26,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -41,10 +43,12 @@ import com.blockpuzzle.model.Shape
 import kotlinx.coroutines.delay
 import com.blockpuzzle.ui.components.DraggableShapePreview
 import com.blockpuzzle.ui.components.GameGrid
+import com.blockpuzzle.ui.components.HoldBox
 import com.blockpuzzle.ui.components.ScoreBar
 import com.blockpuzzle.ui.components.ScorePopOverlay
 import com.blockpuzzle.ui.components.ShapePreview
 import com.blockpuzzle.ui.theme.toComposeColor
+import com.blockpuzzle.viewmodel.DragSource
 import com.blockpuzzle.viewmodel.DragState
 import com.blockpuzzle.viewmodel.GameViewModel
 import com.blockpuzzle.viewmodel.HapticEvent
@@ -122,14 +126,16 @@ fun GameScreen(
                 }
             )
 
+            val density = LocalDensity.current
+            val liftBasePx = with(density) { 96.dp.toPx() }
+            viewModel.liftBasePx = liftBasePx
+
             // Shape tray
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val density = LocalDensity.current
-                val liftBasePx = with(density) { 96.dp.toPx() }
                 gameState.currentShapes.forEachIndexed { index, shape ->
                     val canFit = shape != null && GameEngine.canFitAnywhere(gameState.grid, shape)
                     DraggableShapePreview(
@@ -150,11 +156,46 @@ fun GameScreen(
                         onDragEnd = { viewModel.onDragEnd() },
                         onDragCancel = { viewModel.onDragCancel() },
                         onDoubleTap = { viewModel.rotateShape(index) },
-                        isDragging = dragState.shapeIndex == index,
+                        isDragging = dragState.source == DragSource.TRAY && dragState.shapeIndex == index,
                         dimmed = !canFit
                     )
                 }
             }
+
+            // Hold box
+            Spacer(modifier = Modifier.height(4.dp))
+            val holdCanFit = gameState.holdShape != null &&
+                GameEngine.canFitAnywhere(gameState.grid, gameState.holdShape!!)
+            HoldBox(
+                holdShape = gameState.holdShape,
+                isDragging = dragState.source == DragSource.HOLD && dragState.shape != null,
+                dimmed = !holdCanFit && gameState.holdShape != null,
+                onDragStart = { s -> viewModel.onHoldDragStart(s) },
+                onDrag = { rootOffset ->
+                    val gridRelative = rootOffset - gridPositionInRoot
+                    val s = dragState.shape
+                    val floatingCenterYOffset = if (s != null) {
+                        val gridCellPx = viewModel.cellSizePx
+                        val liftPx = liftBasePx + gridCellPx
+                        val floatingHeightPx = s.height * gridCellPx
+                        -floatingHeightPx / 2f - liftPx
+                    } else 0f
+                    viewModel.onDrag(rootOffset, gridRelative, floatingCenterYOffset)
+                },
+                onDragEnd = { viewModel.onDragEnd() },
+                onDragCancel = { viewModel.onDragCancel() },
+                onDoubleTap = { viewModel.rotateHoldShape() },
+                onGloballyPositioned = { coords ->
+                    val pos = coords.positionInRoot()
+                    viewModel.holdBoxScreenRect = Rect(
+                        offset = pos,
+                        size = Size(
+                            coords.size.width.toFloat(),
+                            coords.size.height.toFloat()
+                        )
+                    )
+                }
+            )
         }
 
         // Score pop overlay — positioned relative to the grid

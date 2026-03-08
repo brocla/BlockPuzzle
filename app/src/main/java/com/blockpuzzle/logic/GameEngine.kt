@@ -90,10 +90,16 @@ object GameEngine {
         shapes.none { it != null && canFitAnywhere(grid, it) }
 
     /**
-     * Generate 3 random shapes that are each placeable on the current [grid].
-     * Retries up to [maxAttempts] per slot to find a fitting shape.
+     * Generate 3 random shapes.
+     * When [ensureFit] is true, retries up to [maxAttempts] per slot to find
+     * a shape placeable on the current [grid].
      */
-    fun generateShapeTriple(grid: Grid, random: Random = Random, maxAttempts: Int = 100): List<Shape> =
+    fun generateShapeTriple(
+        grid: Grid,
+        ensureFit: Boolean = true,
+        random: Random = Random,
+        maxAttempts: Int = 100
+    ): List<Shape> =
         List(3) {
             var shape: Shape
             var attempts = 0
@@ -103,7 +109,7 @@ object GameEngine {
                 shape = (0 until random.nextInt(template.rotations))
                     .fold(template.toShape(color)) { s, _ -> s.rotateCW() }
                 attempts++
-            } while (!canFitAnywhere(grid, shape) && attempts < maxAttempts)
+            } while (ensureFit && !canFitAnywhere(grid, shape) && attempts < maxAttempts)
             shape
         }
 

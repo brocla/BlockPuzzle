@@ -16,15 +16,25 @@ class SettingsRepository(context: Context) {
         prefs[KEY_HAPTIC_ENABLED] ?: false
     }
 
+    val easyShapesFlow: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[KEY_EASY_SHAPES] ?: false
+    }
+
     val paletteFlow: Flow<ColorPalette> = dataStore.data.map { prefs ->
         val name = prefs[KEY_PALETTE] ?: ColorPalette.JEWEL.name
-        val migrated = if (name == "VIVID") "COOL_MINIMAL" else name
+        val migrated = if (name == "VIVID" || name == "COOL_MINIMAL") "JEWEL" else name
         try { ColorPalette.valueOf(migrated) } catch (_: IllegalArgumentException) { ColorPalette.JEWEL }
     }
 
     suspend fun saveHapticEnabled(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[KEY_HAPTIC_ENABLED] = enabled
+        }
+    }
+
+    suspend fun saveEasyShapes(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[KEY_EASY_SHAPES] = enabled
         }
     }
 
@@ -36,6 +46,7 @@ class SettingsRepository(context: Context) {
 
     companion object {
         private val KEY_HAPTIC_ENABLED = booleanPreferencesKey("haptic_enabled")
+        private val KEY_EASY_SHAPES = booleanPreferencesKey("easy_shapes")
         private val KEY_PALETTE = stringPreferencesKey("color_palette")
     }
 }
