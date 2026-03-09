@@ -53,3 +53,7 @@ Desktop.ini
 # Python bytecode (icon_gen.py)
 __pycache__/
 *.pyc
+
+
+*.log
+dependency-hygiene-process.md
