@@ -90,13 +90,9 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     /** Highest 50k milestone reached this game (to avoid re-firing). */
     private var lastScoreMilestone: Int = 0
 
-    private val _showMidGameConfetti = MutableStateFlow(false)
-    val showMidGameConfetti: StateFlow<Boolean> = _showMidGameConfetti.asStateFlow()
-
-    /** Called by the UI after the mid-game confetti animation finishes. */
-    fun dismissMidGameConfetti() {
-        _showMidGameConfetti.value = false
-    }
+    /** Incremented each time confetti should fire; UI launches a new animation on each change. */
+    private val _confettiTrigger = MutableStateFlow(0)
+    val confettiTrigger: StateFlow<Int> = _confettiTrigger.asStateFlow()
 
     /** Called by the UI after a score pop animation finishes. */
     fun dismissScorePop(id: Long) {
@@ -151,7 +147,6 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         startingHighScore = _gameState.value.highScore
         midGameConfettiFired = false
         lastScoreMilestone = 0
-        _showMidGameConfetti.value = false
 
         _gameState.update {
             GameState(
@@ -437,13 +432,13 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         // Beat the starting high score (once per game)
         if (!midGameConfettiFired && startingHighScore > 0 && newScore > startingHighScore) {
             midGameConfettiFired = true
-            _showMidGameConfetti.value = true
+            _confettiTrigger.value++
             return
         }
 
         // 3 or more rows+columns cleared at once
         if (lines.rows.size + lines.cols.size >= 3) {
-            _showMidGameConfetti.value = true
+            _confettiTrigger.value++
             return
         }
 
@@ -451,7 +446,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         val milestone = newScore / 50_000
         if (milestone > lastScoreMilestone) {
             lastScoreMilestone = milestone
-            _showMidGameConfetti.value = true
+            _confettiTrigger.value++
         }
     }
 

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -229,11 +230,12 @@ fun GameScreen(
             )
         }
 
-        // Mid-game confetti — triggered once when the player beats their best score
-        // Stays on screen for the rest of the game; cleared on new game
-        val showMidGameConfetti by viewModel.showMidGameConfetti.collectAsState()
-        if (showMidGameConfetti) {
-            ConfettiEffect()
+        // Celebratory confetti — fires on high score beat, 3+ line clears, and 50k milestones
+        val confettiTrigger by viewModel.confettiTrigger.collectAsState()
+        if (confettiTrigger > 0) {
+            key(confettiTrigger) {
+                ConfettiEffect()
+            }
         }
 
         // Game over overlay — delayed so the player can see the board first
