@@ -20,7 +20,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.blockpuzzle.model.Shape
 import com.blockpuzzle.ui.theme.BoardMedium
@@ -80,10 +79,6 @@ fun HoldBox(
                 alpha = if (isDragging) 0f else 1f
             }
     ) {
-        if (holdShape != null) {
-            Box(modifier = Modifier.testTag("hold_box_shape")) {
-                ShapePreview(shape = holdShape, dimmed = dimmed)
-            }
-        }
+        ShapePreview(shape = holdShape, dimmed = dimmed)
     }
 }

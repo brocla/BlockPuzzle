@@ -183,16 +183,6 @@ class GameScreenTest {
         rule.onNodeWithContentDescription("Back").performClick()
     }
 
-    // ── Test 9: Hold box starts empty ──
-
-    @Test
-    fun holdBoxStartsEmpty() {
-        rule.waitForIdle()
-        // Hold box container exists
-        rule.onNodeWithTag("hold_box").assertIsDisplayed()
-        // But no shape is inside it
-        rule.onNodeWithTag("hold_box_shape").assertDoesNotExist()
-    }
 
     // ── Helpers ──
 

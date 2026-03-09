@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.blockpuzzle.data.GameStateRepository
 import com.blockpuzzle.data.HighScoreRepository
+import com.blockpuzzle.logic.CompleteLines
 import com.blockpuzzle.logic.GameEngine
 import com.blockpuzzle.model.GameState
 import com.blockpuzzle.model.GameState.Companion.GRID_SIZE
@@ -86,6 +87,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     private var startingHighScore: Int = 0
     /** True once the mid-game "beat the high score" confetti has fired this game. */
     private var midGameConfettiFired: Boolean = false
+    /** Highest 50k milestone reached this game (to avoid re-firing). */
+    private var lastScoreMilestone: Int = 0
 
     private val _showMidGameConfetti = MutableStateFlow(false)
     val showMidGameConfetti: StateFlow<Boolean> = _showMidGameConfetti.asStateFlow()
@@ -123,6 +126,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             if (savedGame != null && !savedGame.isGameOver) {
                 _gameState.value = savedGame.copy(highScore = savedHighScore)
                 startingHighScore = savedHighScore
+                lastScoreMilestone = savedGame.score / 50_000
             } else {
                 startingHighScore = savedHighScore
                 _gameState.update {
@@ -146,6 +150,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     fun startNewGame() {
         startingHighScore = _gameState.value.highScore
         midGameConfettiFired = false
+        lastScoreMilestone = 0
         _showMidGameConfetti.value = false
 
         _gameState.update {
@@ -375,7 +380,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                     points = clearResult.points,
                     popCenterRow = clearCenterRow,
                     popCenterCol = clearCenterCol,
-                    isBonus = true
+                    isBonus = true,
+                    lines = lines
                 )
             }
         } else {
@@ -386,7 +392,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                 points = placementPts,
                 popCenterRow = drag.ghostRow + shape.height / 2f,
                 popCenterCol = drag.ghostCol + shape.width / 2f,
-                isBonus = false
+                isBonus = false,
+                lines = CompleteLines()
             )
         }
     }
@@ -399,7 +406,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         points: Int,
         popCenterRow: Float,
         popCenterCol: Float,
-        isBonus: Boolean
+        isBonus: Boolean,
+        lines: CompleteLines = CompleteLines()
     ) {
         val newScore = _gameState.value.score + points
         val newHighScore = maxOf(newScore, _gameState.value.highScore)
@@ -421,13 +429,28 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
         persistGameState()
         emitScorePop(points, popCenterRow, popCenterCol, isBonus)
-        checkMidGameConfetti(newScore)
+        checkConfetti(newScore, lines)
     }
 
-    /** Trigger mid-game confetti the first time the score exceeds the starting high score. */
-    private fun checkMidGameConfetti(newScore: Int) {
+    /** Trigger confetti for: beating the high score, clearing 3+ lines, or crossing a 50k milestone. */
+    private fun checkConfetti(newScore: Int, lines: CompleteLines) {
+        // Beat the starting high score (once per game)
         if (!midGameConfettiFired && startingHighScore > 0 && newScore > startingHighScore) {
             midGameConfettiFired = true
+            _showMidGameConfetti.value = true
+            return
+        }
+
+        // 3 or more rows+columns cleared at once
+        if (lines.rows.size + lines.cols.size >= 3) {
+            _showMidGameConfetti.value = true
+            return
+        }
+
+        // Score crossed a new 50,000-point milestone
+        val milestone = newScore / 50_000
+        if (milestone > lastScoreMilestone) {
+            lastScoreMilestone = milestone
             _showMidGameConfetti.value = true
         }
     }
