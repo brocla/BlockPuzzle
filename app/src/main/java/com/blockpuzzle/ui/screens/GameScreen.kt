@@ -35,6 +35,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -140,7 +141,7 @@ fun GameScreen(
                     val canFit = shape != null && GameEngine.canFitAnywhere(gameState.grid, shape)
                     DraggableShapePreview(
                         shape = shape,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).testTag("tray_shape_$index"),
                         onDragStart = { s -> viewModel.onDragStart(index, s) },
                         onDrag = { rootOffset ->
                             val gridRelative = rootOffset - gridPositionInRoot
@@ -167,6 +168,7 @@ fun GameScreen(
             val holdCanFit = gameState.holdShape != null &&
                 GameEngine.canFitAnywhere(gameState.grid, gameState.holdShape!!)
             HoldBox(
+                modifier = Modifier.testTag("hold_box"),
                 holdShape = gameState.holdShape,
                 isDragging = dragState.source == DragSource.HOLD && dragState.shape != null,
                 dimmed = !holdCanFit && gameState.holdShape != null,

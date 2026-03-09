@@ -1,6 +1,7 @@
 package com.blockpuzzle.viewmodel
 
 import android.app.Application
+import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.lifecycle.AndroidViewModel
@@ -135,6 +136,11 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                 _dragState.value = DragState()
             }
         }
+    }
+
+    @VisibleForTesting
+    internal fun setGameStateForTest(state: GameState) {
+        _gameState.value = state
     }
 
     fun startNewGame() {
