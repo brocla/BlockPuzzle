@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.key
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -230,13 +229,10 @@ fun GameScreen(
             )
         }
 
-        // Celebratory confetti — fires on high score beat, 3+ line clears, and 50k milestones
+        // Celebratory confetti — accumulates across triggers, resets on new game
         val confettiTrigger by viewModel.confettiTrigger.collectAsState()
-        if (confettiTrigger > 0) {
-            key(confettiTrigger) {
-                ConfettiEffect()
-            }
-        }
+        val confettiReset by viewModel.confettiReset.collectAsState()
+        AccumulatingConfetti(trigger = confettiTrigger, reset = confettiReset)
 
         // Game over overlay — delayed so the player can see the board first
         var showGameOver by remember { mutableStateOf(false) }
