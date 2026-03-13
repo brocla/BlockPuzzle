@@ -94,10 +94,6 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     private val _confettiTrigger = MutableStateFlow(0)
     val confettiTrigger: StateFlow<Int> = _confettiTrigger.asStateFlow()
 
-    /** Incremented on new game to clear accumulated confetti pile. */
-    private val _confettiReset = MutableStateFlow(0)
-    val confettiReset: StateFlow<Int> = _confettiReset.asStateFlow()
-
     /** Called by the UI after a score pop animation finishes. */
     fun dismissScorePop(id: Long) {
         _scorePops.update { pops -> pops.filter { it.id != id } }
@@ -151,7 +147,6 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         startingHighScore = _gameState.value.highScore
         midGameConfettiFired = false
         lastScoreMilestone = 0
-        _confettiReset.value++
 
         _gameState.update {
             GameState(
@@ -430,18 +425,6 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         persistGameState()
         emitScorePop(points, popCenterRow, popCenterCol, isBonus)
         checkConfetti(newScore, lines)
-
-        // Full board clear: award 5000 bonus points + confetti
-        if (lines.isNotEmpty && newGrid.all { row -> row.none { it.filled } }) {
-            val boardClearBonus = 5000
-            val updatedScore = newScore + boardClearBonus
-            val updatedHighScore = maxOf(updatedScore, newHighScore)
-            persistHighScoreIfNeeded(updatedHighScore)
-            _gameState.update { it.copy(score = updatedScore, highScore = updatedHighScore) }
-            persistGameState()
-            emitScorePop(boardClearBonus, 3.5f, 3.5f, isBonus = true)
-            _confettiTrigger.value++
-        }
     }
 
     /** Trigger confetti for: beating the high score, clearing 3+ lines, or crossing a 50k milestone. */

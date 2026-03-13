@@ -24,11 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -195,98 +191,60 @@ internal val confettiColors = listOf(
 
 @Composable
 internal fun ConfettiEffect() {
-    AccumulatingConfetti(trigger = 1, reset = 0)
-}
-
-private const val NUM_COLUMNS = 25
-private const val AVG_SIZE_DP = 7f // midpoint of 4..10 range
-private const val SLOT_HEIGHT = (AVG_SIZE_DP * 1.4f) / 800f // screen fraction per stacked piece
-
-/** Generate a batch of 50 confetti particles with landing positions offset by existing column heights. */
-private fun generateBatch(columnCounts: IntArray): List<ConfettiParticle> {
-    val rng = Random(System.nanoTime())
-    val raw = List(50) {
-        ConfettiParticle(
-            x = rng.nextFloat(),
-            speed = 0.5f + rng.nextFloat() * 0.8f,
-            size = 4f + rng.nextFloat() * 6f,
-            color = confettiColors[rng.nextInt(confettiColors.size)],
-            wobbleSpeed = 1.5f + rng.nextFloat() * 2f,
-            wobbleAmp = 0.01f + rng.nextFloat() * 0.03f,
-            rotation = rng.nextFloat() * 360f
-        )
-    }
-    val sorted = raw.sortedByDescending { it.speed }
-    return sorted.map { p ->
-        val col = (p.x * NUM_COLUMNS).toInt().coerceIn(0, NUM_COLUMNS - 1)
-        val slot = columnCounts[col]
-        columnCounts[col]++
-        p.copy(landingY = 1f - slot * SLOT_HEIGHT)
-    }
-}
-
-/**
- * Confetti that accumulates across multiple triggers. Each trigger adds a new falling batch;
- * landed particles persist until [reset] changes (new game).
- */
-@Composable
-internal fun AccumulatingConfetti(trigger: Int, reset: Int) {
     val density = LocalDensity.current
+    val particles = remember {
+        val rng = Random(System.nanoTime())
+        val numColumns = 25
+        // Average particle size in dp — used to compute stack height per slot
+        val avgSizeDp = 7f // midpoint of 4..10 range
+        val slotHeight = (avgSizeDp * 1.4f) / 800f // approx fraction of screen per stacked piece
 
-    // Global column heights — tracks how high the pile is in each column
-    val columnCounts = remember { IntArray(NUM_COLUMNS) }
+        // Generate raw particles first
+        val raw = List(50) {
+            ConfettiParticle(
+                x = rng.nextFloat(),
+                speed = 0.5f + rng.nextFloat() * 0.8f,
+                size = 4f + rng.nextFloat() * 6f,
+                color = confettiColors[rng.nextInt(confettiColors.size)],
+                wobbleSpeed = 1.5f + rng.nextFloat() * 2f,
+                wobbleAmp = 0.01f + rng.nextFloat() * 0.03f,
+                rotation = rng.nextFloat() * 360f
+            )
+        }
 
-    // Landed particles from all previous batches (persistent pile)
-    val landedParticles = remember { mutableStateListOf<ConfettiParticle>() }
+        // Sort by arrival time so earlier-landing particles get bottom slots
+        val sorted = raw.sortedByDescending { it.speed }
 
-    // Current falling batch + its animation progress
-    var fallingBatch by remember { mutableStateOf<List<ConfettiParticle>>(emptyList()) }
-    val fallProgress = remember { Animatable(0f) }
-
-    // Reset: clear everything on new game
-    LaunchedEffect(reset) {
-        columnCounts.fill(0)
-        landedParticles.clear()
-        fallingBatch = emptyList()
-        fallProgress.snapTo(0f)
+        // Assign column-based landing positions
+        val columnCounts = IntArray(numColumns)
+        sorted.map { p ->
+            val col = (p.x * numColumns).toInt().coerceIn(0, numColumns - 1)
+            val slot = columnCounts[col]
+            columnCounts[col]++
+            p.copy(landingY = 1f - slot * slotHeight)
+        }
     }
 
-    // New trigger: generate a new batch and animate it
-    LaunchedEffect(trigger) {
-        if (trigger == 0) return@LaunchedEffect
-        val batch = generateBatch(columnCounts)
-        fallingBatch = batch
-        fallProgress.snapTo(0f)
+    // Progress: 0 → 2 over 3s so even the slowest particles (speed=0.5) exit the screen
+    val fallProgress = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
         fallProgress.animateTo(
             targetValue = 2f,
             animationSpec = tween(durationMillis = 3000, easing = LinearEasing)
         )
-        // Animation done — move all to landed pile
-        landedParticles.addAll(batch)
-        fallingBatch = emptyList()
     }
 
     Canvas(modifier = Modifier.fillMaxSize()) {
-        // Draw landed pile (static)
-        for (p in landedParticles) {
-            val px = p.x * size.width
-            val py = p.landingY * size.height
-            val sizePx = with(density) { p.size.dp.toPx() }
-            drawRect(
-                color = p.color,
-                topLeft = Offset(px - sizePx / 2, py - sizePx / 2),
-                size = Size(sizePx, sizePx * 1.4f)
-            )
-        }
-
-        // Draw falling batch (animated)
         val t = fallProgress.value
-        for (p in fallingBatch) {
+        for (p in particles) {
             val particleT = t * p.speed
+            // Falling y before clamping
             val fallingY = -0.1f + particleT * 1.5f
+            // Clamp at this particle's landing position — it piles up instead of falling off
             val landed = fallingY >= p.landingY
             val y = fallingY.coerceAtMost(p.landingY)
-            if (y < -0.1f) continue
+            if (y < -0.1f) continue // not yet on screen
+            // Stop wobbling once landed
             val wobble = if (landed) 0f
                 else kotlin.math.sin(particleT * p.wobbleSpeed * Math.PI.toFloat() * 2f) * p.wobbleAmp
             val x = p.x + wobble
