@@ -4,6 +4,10 @@ A block puzzle game for Android built with Kotlin and Jetpack Compose.
 
 There are no ads, no data collection, no in-app purchases. Runs without an internet connection.
 
+<p align="center">
+  <img src="screenshot.png" alt="Block Puzzle gameplay" width="300">
+</p>
+
 ## Features
 
 - Drag and drop block shapes onto an 8x8 grid
