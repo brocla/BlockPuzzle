@@ -22,6 +22,10 @@ val TextGold = Color(0xFFFFD54F)        // Highlighted numbers
 val GhostValid = Color(0x4400C853)      // Green tint for valid placement
 val GhostInvalid = Color(0x44FF1744)    // Red tint for invalid placement
 
+// House Sherwin Williams colors
+val Base = Color(0xFFCDBFB0)            // Bungalow Beige
+val Trim = Color(0xFFAC9A8A)            // Threshold Taupe
+
 // ── Block color palettes ──
 
 /** Active palette — change this to switch all block colors. */
